@@ -2,9 +2,9 @@
 
 namespace Tests;
 
+use Comhon\EntityRequester\EntityRequesterServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Comhon\EntityRequester\EntityRequesterServiceProvider;
 
 class TestCase extends Orchestra
 {

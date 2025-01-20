@@ -2,9 +2,9 @@
 
 namespace Comhon\EntityRequester;
 
+use Comhon\EntityRequester\Commands\EntityRequesterCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Comhon\EntityRequester\Commands\EntityRequesterCommand;
 
 class EntityRequesterServiceProvider extends PackageServiceProvider
 {
