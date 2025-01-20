@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Comhon\EntityRequester\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class EntityRequesterCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-entity-requester';
 
     public $description = 'My command';
 
