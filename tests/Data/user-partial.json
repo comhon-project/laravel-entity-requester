@@ -1,0 +1,61 @@
+{
+    "id": "user",
+    "name": "user",
+    "properties": [
+        {
+            "id": "id",
+            "type": "integer"
+        },
+        {
+            "id": "email",
+            "type": "string"
+        },
+        {
+            "id": "password",
+            "type": "string"
+        },
+        {
+            "id": "name",
+            "type": "float"
+        },
+        {
+            "id": "first_name",
+            "type": "float"
+        },
+        {
+            "id": "locked_property",
+            "type": "float"
+        },
+        {
+            "id": "posts",
+            "type": "relationship",
+            "relationship_type": "has_many",
+            "model": "post"
+        }
+    ],
+    "unique_identifier": "id",
+    "primary_identifiers": null,
+    "request": {
+        "filtrable": {
+            "properties": [
+                "id",
+                "email",
+                "first_name",
+                "property_doesnt_exist"
+            ],
+            "scopes": [
+                {
+                    "id": "dateTime",
+                    "type": "datetime",
+                    "use_operator": true
+                },
+                {
+                    "id": "locked_scope",
+                    "type": "array",
+                    "children": { "type": "integer" }
+                }
+            ]
+        },
+        "sortable": ["id", "email", "property_doesnt_exist"]
+    }
+}

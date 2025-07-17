@@ -2,9 +2,9 @@
 
 namespace Comhon\EntityRequester;
 
+use Comhon\EntityRequester\Commands\MakeModelSchema;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Comhon\EntityRequester\Commands\EntityRequesterCommand;
 
 class EntityRequesterServiceProvider extends PackageServiceProvider
 {
@@ -18,8 +18,6 @@ class EntityRequesterServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-entity-requester')
             ->hasConfigFile()
-            ->hasViews()
-            ->hasMigration('create_laravel_entity_requester_table')
-            ->hasCommand(EntityRequesterCommand::class);
+            ->hasCommand(MakeModelSchema::class);
     }
 }

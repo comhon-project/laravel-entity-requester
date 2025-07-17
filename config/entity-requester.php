@@ -1,6 +1,8 @@
 <?php
 
-// config for Comhon/EntityRequester
 return [
-
+    /*
+    | determine if schemas should be cached
+    */
+    'use_cache' => false,
 ];

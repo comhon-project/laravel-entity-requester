@@ -1,0 +1,27 @@
+{
+    "properties": [
+        "first_name",
+        "posts",
+        "locked_property"
+    ],
+    "request": {
+        "filtrable": {
+            "properties": [
+                "password",
+                "name",
+                "email",
+                "property_doesnt_exist"
+            ],
+            "scopes": [
+                "dateTime",
+                "locked_scope"
+            ]
+        },
+        "sortable": [
+            "password",
+            "first_name",
+            "name",
+            "property_doesnt_exist"
+        ]
+    }
+}

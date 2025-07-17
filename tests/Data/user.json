@@ -1,0 +1,125 @@
+{
+    "id": "user",
+    "name": "user",
+    "properties": [
+        {
+            "id": "id",
+            "type": "integer"
+        },
+        {
+            "id": "email",
+            "type": "string"
+        },
+        {
+            "id": "password",
+            "type": "string"
+        },
+        {
+            "id": "name",
+            "type": "string"
+        },
+        {
+            "id": "first_name",
+            "type": "string"
+        },
+        {
+            "id": "preferred_locale",
+            "type": "string"
+        },
+        {
+            "id": "birth_date",
+            "type": "datetime"
+        },
+        {
+            "id": "birth_day",
+            "type": "date"
+        },
+        {
+            "id": "birth_hour",
+            "type": "time"
+        },
+        {
+            "id": "age",
+            "type": "integer"
+        },
+        {
+            "id": "score",
+            "type": "float"
+        },
+        {
+            "id": "comment",
+            "type": "string"
+        },
+        {
+            "id": "status",
+            "type": "integer",
+            "enum": [1, 2, 3]
+        },
+        {
+            "id": "favorite_fruits",
+            "type": "array",
+            "children": {
+                "type": "string",
+                "enum": ["apple", "orange", "strawberry"]
+            }
+        },
+        {
+            "id": "has_consumer_ability",
+            "type": "integer"
+        },
+        {
+            "id": "email_verified_at",
+            "type": "datetime"
+        },
+        {
+            "id": "posts",
+            "type": "relationship",
+            "relationship_type": "has_many",
+            "model": "post"
+        },
+        {
+            "id": "friends",
+            "type": "relationship",
+            "relationship_type": "belongs_to_many",
+            "model": "user"
+        }
+    ],
+    "unique_identifier": "id",
+    "primary_identifiers": null,
+    "request": {
+        "filtrable": {
+            "properties": [],
+            "scopes": [
+                {
+                    "id": "validated"
+                },
+                {
+                    "id": "age",
+                    "type": "integer",
+                    "use_operator": false
+                },
+                {
+                    "id": "bool",
+                    "type": "boolean",
+                    "use_operator": false
+                },
+                {
+                    "id": "carbon",
+                    "type": "datetime",
+                    "use_operator": false
+                },
+                {
+                    "id": "dateTime",
+                    "type": "datetime",
+                    "use_operator": false
+                },
+                {
+                    "id": "foo",
+                    "type": "string",
+                    "use_operator": true
+                }
+            ]
+        },
+        "sortable": []
+    }
+}
