@@ -70,6 +70,40 @@ class MakeModelSchemaComandTest extends TestCase
         ]);
     }
 
+    public function assertShemaStringEqualsShemaString(string $schema1, string $schema2)
+    {
+        $schemas = [
+            json_decode($schema1, true),
+            json_decode($schema2, true),
+        ];
+
+        // table colums are not always retrieve in the same order
+        // so properties order may vary and create a false negative
+        // so we reorder all properties by id
+        foreach ($schemas as &$schema) {
+            $schema['properties'] = collect($schema['properties'])->sortBy('id')->values()->all();
+            $schema['request']['filtrable']['properties'] = collect($schema['request']['filtrable']['properties'])->sort()->values()->all();
+            $schema['request']['sortable'] = collect($schema['request']['sortable'])->sort()->values()->all();
+        }
+        $this->assertEquals($schemas[0], $schemas[1]);
+    }
+
+    public function assertShemaStringEqualsShemaFile(string $path, string $schema)
+    {
+        $this->assertShemaStringEqualsShemaString(
+            file_get_contents($path),
+            $schema,
+        );
+    }
+
+    public function assertShemaFileEqualsShemaFile(string $path1, string $path2)
+    {
+        $this->assertShemaStringEqualsShemaString(
+            file_get_contents($path1),
+            file_get_contents($path2),
+        );
+    }
+
     public function test_filtrable_and_sortable_prompting()
     {
         $this->artisan('entity-requester:make-model-schema', ['model' => 'User'])
@@ -89,7 +123,7 @@ class MakeModelSchemaComandTest extends TestCase
         $json = file_get_contents(base_path('schemas/user.json'));
         $this->assertEquals($pretty, str_contains($json, "\n"));
 
-        $this->assertJsonStringEqualsJsonFile($this->getExpectedSchemaPath('user.json'), $json);
+        $this->assertShemaStringEqualsShemaFile($this->getExpectedSchemaPath('user.json'), $json);
     }
 
     public function test_create_model_schema_full_name_space_success()
@@ -139,7 +173,7 @@ class MakeModelSchemaComandTest extends TestCase
             }
             EOT;
 
-        $this->assertJsonStringEqualsJsonString($expected, $json);
+        $this->assertShemaStringEqualsShemaString($expected, $json);
     }
 
     #[DataProvider('providerFiltrableOptions')]
@@ -155,7 +189,7 @@ class MakeModelSchemaComandTest extends TestCase
             file_get_contents($this->getExpectedSchemaPath('user.json')),
         );
 
-        $this->assertJsonStringEqualsJsonString($expected, $json);
+        $this->assertShemaStringEqualsShemaString($expected, $json);
     }
 
     public static function providerFiltrableOptions()
@@ -233,7 +267,7 @@ class MakeModelSchemaComandTest extends TestCase
             file_get_contents($this->getExpectedSchemaPath('user.json')),
         );
 
-        $this->assertJsonStringEqualsJsonString($expected, $json);
+        $this->assertShemaStringEqualsShemaString($expected, $json);
     }
 
     public static function providerSortableOptions()
@@ -295,7 +329,7 @@ class MakeModelSchemaComandTest extends TestCase
 
         $filename = $fresh ? 'user.json' : 'user-updated.json';
 
-        $this->assertJsonFileEqualsJsonFile($this->getExpectedSchemaPath($filename), base_path('schemas/user.json'));
+        $this->assertShemaFileEqualsShemaFile($this->getExpectedSchemaPath($filename), base_path('schemas/user.json'));
     }
 
     public function test_mismatching_names()

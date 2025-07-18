@@ -65,7 +65,7 @@
         },
         {
             "id": "has_consumer_ability",
-            "type": "integer"
+            "type": "boolean"
         },
         {
             "id": "email_verified_at",

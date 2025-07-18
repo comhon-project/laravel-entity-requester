@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -30,7 +31,10 @@ return new class extends Migration
             $table->string('favorite_fruits', 15)->nullable();
             $table->boolean('has_consumer_ability')->default(false);
             $table->timestamp('email_verified_at')->nullable();
-            $table->geometry('positions');
+
+            if (DB::connection()->getDriverName() != 'pgsql') {
+                $table->geometry('positions');
+            }
         });
         Schema::create('visibles', function (Blueprint $table) {
             $table->id();

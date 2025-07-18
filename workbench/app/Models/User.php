@@ -38,6 +38,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'has_consumer_ability' => 'boolean',
         'first_name' => AsStringable::class,
         'status' => Status::class,
         'favorite_fruits' => AsEnumCollection::class.':'.Fruit::class,
