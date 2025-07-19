@@ -6,8 +6,10 @@ use App\Models\Post;
 use App\Models\User;
 use App\Resolver\ModelResolver;
 use App\Visible;
+use Comhon\EntityRequester\Commands\MakeModelSchema;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use Illuminate\Support\ServiceProvider;
+use ReflectionParameter;
 
 class WorkbenchServiceProvider extends ServiceProvider
 {
@@ -22,6 +24,14 @@ class WorkbenchServiceProvider extends ServiceProvider
                 ->bind('post', Post::class)
                 ->bind('visible', Visible::class);
         });
+
+        $reslover = fn ($type) => $type == 'hashed' ? ['type' => 'string'] : null;
+        MakeModelSchema::registerColumnTypeResolver($reslover);
+        MakeModelSchema::registerCastTypeResolver($reslover);
+
+        $reslover = fn (ReflectionParameter $param) => $param->getName() == 'resolvableParam'
+            ? ['type' => 'string'] : null;
+        MakeModelSchema::registerParamTypeResolver($reslover);
     }
 
     /**

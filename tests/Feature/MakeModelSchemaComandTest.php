@@ -6,6 +6,7 @@ use App\Models\User;
 use Comhon\EntityRequester\Commands\MakeModelSchema;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -158,7 +159,8 @@ class MakeModelSchemaComandTest extends TestCase
                 "properties": [
                     {
                         "id": "visible",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": false
                     }
                 ],
                 "unique_identifier": "id",
@@ -345,5 +347,117 @@ class MakeModelSchemaComandTest extends TestCase
 
         $this->expectExceptionMessage('mismatching names');
         $method->invoke($command, new User, ['name' => 'foo']);
+    }
+
+    #[DataProvider('provider_databases_colums_query')]
+    public function test_databases_colums_query($databaseDriver, $expectedQuery)
+    {
+        $command = new MakeModelSchema;
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('getSelectColumnsQuery');
+        $method->setAccessible(true);
+
+        $property = $reflection->getProperty('modelResolver');
+        $property->setAccessible(true);
+        $property->setValue($command, app(ModelResolverInterface::class));
+
+        $query = $method->invoke($command, 'users', $databaseDriver);
+        $this->assertEquals($expectedQuery, $query);
+    }
+
+    public static function provider_databases_colums_query()
+    {
+        $table = 'users';
+
+        return [
+            [
+                'mysql',
+                <<<"EOT"
+                    SELECT
+                        COLUMN_NAME as name,
+                        DATA_TYPE as type,
+                        CASE
+                            WHEN IS_NULLABLE = 'YES' THEN 0
+                            ELSE 1
+                        END as notnull
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = '$table' AND TABLE_SCHEMA = DATABASE()
+                    EOT
+            ],
+            [
+                'mariadb',
+                <<<"EOT"
+                    SELECT
+                        COLUMN_NAME as name,
+                        DATA_TYPE as type,
+                        CASE
+                            WHEN IS_NULLABLE = 'YES' THEN 0
+                            ELSE 1
+                        END as notnull
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = '$table' AND TABLE_SCHEMA = DATABASE()
+                    EOT
+            ],
+            [
+                'pgsql',
+                <<<"EOT"
+                    SELECT
+                        column_name AS name,
+                        data_type AS type, 
+                        CASE
+                            WHEN is_nullable = 'YES' THEN 0
+                            ELSE 1
+                        END as notnull
+                    FROM information_schema.columns
+                    WHERE table_name = '$table'
+                    EOT
+            ],
+            [
+                'sqlite',
+                "PRAGMA table_info($table)",
+            ],
+        ];
+    }
+
+    #[DataProvider('provider_cast_types')]
+    public function test_cast_types($castType, $expect)
+    {
+        $command = new MakeModelSchema;
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('getTypeInfosFromCast');
+        $method->setAccessible(true);
+
+        $property = $reflection->getProperty('modelResolver');
+        $property->setAccessible(true);
+        $property->setValue($command, app(ModelResolverInterface::class));
+
+        $typeInfos = $method->invoke($command, $castType);
+        $this->assertEquals($expect, $typeInfos);
+    }
+
+    public static function provider_cast_types()
+    {
+        return [
+            [AsArrayObject::class, ['type' => 'array']],
+            ['array', ['type' => 'array']],
+            ['collection', ['type' => 'array']],
+            ['date', ['type' => 'date']],
+            ['datetime', ['type' => 'datetime']],
+            ['immutable_date', ['type' => 'date']],
+            ['immutable_datetime', ['type' => 'datetime']],
+            ['float', ['type' => 'float']],
+            ['double', ['type' => 'float']],
+            ['real', ['type' => 'float']],
+            ['integer', ['type' => 'integer']],
+            ['timestamp', ['type' => 'timestamp']],
+        ];
+    }
+
+    public function test_invalid_resolver()
+    {
+        MakeModelSchema::registerColumnTypeResolver(fn () => 'foo');
+
+        $this->expectExceptionMessage('Closure registered through registerColumnTypeResolver must return an array or null');
+        $this->callMakeModelSchemaCommand('User', []);
     }
 }

@@ -13,7 +13,7 @@
                 "property_doesnt_exist"
             ],
             "scopes": [
-                "dateTime",
+                "foo",
                 "locked_scope"
             ]
         },

@@ -34,6 +34,8 @@ return new class extends Migration
 
             if (DB::connection()->getDriverName() != 'pgsql') {
                 $table->geometry('positions');
+            } else {
+                $table->binary('positions');
             }
         });
         Schema::create('visibles', function (Blueprint $table) {

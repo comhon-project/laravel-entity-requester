@@ -20,6 +20,12 @@ use ReflectionMethod;
 
 class MakeModelSchema extends Command
 {
+    private static ?\Closure $columnTypeResolver = null;
+
+    private static ?\Closure $castTypeResolver = null;
+
+    private static ?\Closure $paramTypeResolver = null;
+
     /**
      * The name and signature of the console command.
      *
@@ -40,6 +46,34 @@ class MakeModelSchema extends Command
     protected $description = 'generate a model schema';
 
     private ModelResolverInterface $modelResolver;
+
+    public static function registerColumnTypeResolver(\Closure $reslover)
+    {
+        static::$columnTypeResolver = static::getResolverClosure($reslover, __FUNCTION__);
+    }
+
+    public static function registerCastTypeResolver(\Closure $reslover)
+    {
+        static::$castTypeResolver = static::getResolverClosure($reslover, __FUNCTION__);
+    }
+
+    public static function registerParamTypeResolver(\Closure $reslover)
+    {
+        static::$paramTypeResolver = static::getResolverClosure($reslover, __FUNCTION__);
+    }
+
+    public static function getResolverClosure(\Closure $reslover, string $function)
+    {
+        return function (...$params) use ($reslover, $function) {
+            $return = $reslover(...$params);
+
+            if ($return !== null && ! is_array($return)) {
+                throw new \Exception("Closure registered through $function must return an array or null");
+            }
+
+            return $return;
+        };
+    }
 
     /**
      * Execute the console command.
@@ -83,7 +117,6 @@ class MakeModelSchema extends Command
             $schema['properties'] ?? [],
             $lock['properties'] ?? [],
         );
-
         $schema['request']['filtrable']['properties'] = $this->getRequestProperties(
             $model,
             $filtrable,
@@ -116,7 +149,7 @@ class MakeModelSchema extends Command
             'name' => $this->getModelReadableName($model),
             'properties' => [],
             'unique_identifier' => $model->getKeyName(),
-            'primary_identifiers' => null, // TODO interface
+            'primary_identifiers' => $model->primaryIdentifiers ?? null,
             'request' => [
                 'filtrable' => [
                     'properties' => [],
@@ -163,9 +196,10 @@ class MakeModelSchema extends Command
 
     private function getTypeInfosFromDatabase($databaseType)
     {
+        $typeInfos = ['type' => null];
         $columnType = strtolower($databaseType);
-        $type = match (true) {
-            str_contains($columnType, 'int') => 'integer',
+
+        $typeInfos['type'] = match (true) {
             str_contains($columnType, 'float') => 'float',
             str_contains($columnType, 'double') => 'float',
             str_contains($columnType, 'real') => 'float',
@@ -176,15 +210,18 @@ class MakeModelSchema extends Command
             str_contains($columnType, 'timestamp') => 'datetime',
             str_contains($columnType, 'date') => 'date',
             str_contains($columnType, 'time') => 'time',
+            str_contains($columnType, 'int') => 'integer',
             default => null
         };
 
-        return [
-            'type' => $type,
-        ];
+        if (! isset($typeInfos['type']) && static::$columnTypeResolver) {
+            $typeInfos = (static::$columnTypeResolver)($columnType) ?? $typeInfos;
+        }
+
+        return $typeInfos;
     }
 
-    private function getTypeInfosFromCast($castType)
+    private function getTypeInfosFromCast($castType): array
     {
         $typeInfos = ['type' => null];
 
@@ -197,18 +234,76 @@ class MakeModelSchema extends Command
         }
 
         if (enum_exists($castType)) {
-            $typeInfos['enum'] = collect($castType::cases())->map(fn ($case) => $case->value)->all();
+            $typeInfos['enum'] = collect($castType::cases())
+                ->mapWithKeys(fn ($case) => [$case->value => Str::snake($case->name, ' ')])
+                ->all();
             $castType = $this->getEnumBackingType($castType);
         }
 
-        $typeInfos['type'] = match (true) {
-            $castType == AsStringable::class => 'string',
-            $castType == AsArrayObject::class => 'array',
-            str_contains($castType, AsCollection::class) => 'array',
-            str_contains($castType, 'int') => 'integer',
-            str_contains($castType, 'hashed') => 'string',
-            default => $castType
+        $typeInfos['type'] = match ($castType) {
+            AsArrayObject::class => 'array',
+            'array' => 'array',
+            'collection' => 'array',
+            'boolean' => 'boolean',
+            'date' => 'date',
+            'datetime' => 'datetime',
+            'immutable_date' => 'date',
+            'immutable_datetime' => 'datetime',
+            'float' => 'float',
+            'double' => 'float',
+            'real' => 'float',
+            'int' => 'integer',
+            'integer' => 'integer',
+            'timestamp' => 'timestamp',
+            'string' => 'string',
+            AsStringable::class => 'string',
+            default => null
         };
+
+        if (! isset($typeInfos['type'])) {
+            $typeInfos['type'] = match (true) {
+                str_contains($castType, AsCollection::class) => 'array',
+                default => null
+            };
+        }
+
+        if (! isset($typeInfos['type']) && static::$castTypeResolver) {
+            $typeInfos = (static::$castTypeResolver)($castType) ?? $typeInfos;
+        }
+
+        return $typeInfos;
+    }
+
+    private function getTypeFromFunctionParameterType(\ReflectionParameter $parameter): array
+    {
+        $typeInfos = ['type' => null];
+
+        if (! $parameter->getType() instanceof \ReflectionNamedType) {
+            return $typeInfos;
+        }
+
+        $paramType = $parameter->getType()->getName();
+
+        if (enum_exists($paramType)) {
+            $typeInfos['enum'] = collect($paramType::cases())
+                ->mapWithKeys(fn ($case) => [$case->value => Str::snake($case->name, ' ')])
+                ->all();
+            $paramType = $this->getEnumBackingType($paramType);
+        }
+
+        $typeInfos['type'] = match ($paramType) {
+            'int' => 'integer',
+            'float' => 'float',
+            'bool' => 'boolean',
+            'string' => 'string',
+            Carbon::class => 'datetime',
+            DateTime::class => 'datetime',
+            default => null,
+        };
+
+        if (! isset($typeInfos['type']) && static::$paramTypeResolver) {
+            $typeInfos = (static::$paramTypeResolver)($parameter) ?? $typeInfos;
+        }
 
         return $typeInfos;
     }
@@ -218,20 +313,8 @@ class MakeModelSchema extends Command
         $reflection = new ReflectionEnum($enumClass);
 
         return $reflection->isBacked()
-            ? $reflection->getBackingType()->getName() : throw new \Exception("enum '$enumClass' must be backed");
-    }
-
-    private function getTypeFromFunctionParameterType(\ReflectionParameter $parameter)
-    {
-        return $parameter->gettype() instanceof \ReflectionNamedType
-            ? match ($parameter->gettype()->getName()) {
-                'int' => 'integer',
-                'bool' => 'boolean',
-                Carbon::class => 'datetime',
-                DateTime::class => 'datetime',
-                default => $parameter->gettype()->getName(),
-            }
-        : null;
+            ? $reflection->getBackingType()->getName()
+            : throw new \Exception("enum '$enumClass' must be backed");
     }
 
     private function getProperties(Model $model, array $existingProperties, array $lockedProperties)
@@ -242,7 +325,10 @@ class MakeModelSchema extends Command
             ->keyBy('id');
 
         $casts = $model->getCasts();
-        $columns = DB::select($this->getSelectColumnsQuery($model->getTable()));
+        $columns = DB::select($this->getSelectColumnsQuery(
+            $model->getTable(),
+            DB::connection()->getDriverName()
+        ));
 
         foreach ($columns as $column) {
             if (in_array($column->name, $lockedProperties)) {
@@ -259,6 +345,7 @@ class MakeModelSchema extends Command
                     $properties[] = [
                         'id' => $column->name,
                         ...$typeInfos,
+                        'nullable' => ! $column->notnull,
                     ];
                 }
             }
@@ -301,14 +388,42 @@ class MakeModelSchema extends Command
         return $properties;
     }
 
-    private function getSelectColumnsQuery(string $table): string
+    private function getSelectColumnsQuery(string $table, string $driver): string
     {
-        $driver = DB::connection()->getDriverName();
-
         return match ($driver) {
-            'mysql' => "SELECT COLUMN_NAME as name, DATA_TYPE as type FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '$table' AND TABLE_SCHEMA = DATABASE()",
-            'mariadb' => "SELECT COLUMN_NAME as name, DATA_TYPE as type FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '$table' AND TABLE_SCHEMA = DATABASE()",
-            'pgsql' => "SELECT column_name AS name, data_type AS type FROM information_schema.columns WHERE table_name = '$table'",
+            'mysql' => <<<"EOT"
+                SELECT
+                    COLUMN_NAME as name,
+                    DATA_TYPE as type,
+                    CASE
+                        WHEN IS_NULLABLE = 'YES' THEN 0
+                        ELSE 1
+                    END as notnull
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_NAME = '$table' AND TABLE_SCHEMA = DATABASE()
+                EOT,
+            'mariadb' => <<<"EOT"
+                SELECT
+                    COLUMN_NAME as name,
+                    DATA_TYPE as type,
+                    CASE
+                        WHEN IS_NULLABLE = 'YES' THEN 0
+                        ELSE 1
+                    END as notnull
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_NAME = '$table' AND TABLE_SCHEMA = DATABASE()
+                EOT,
+            'pgsql' => <<<"EOT"
+                SELECT
+                    column_name AS name,
+                    data_type AS type, 
+                    CASE
+                        WHEN is_nullable = 'YES' THEN 0
+                        ELSE 1
+                    END as notnull
+                FROM information_schema.columns
+                WHERE table_name = '$table'
+                EOT,
             'sqlite' => "PRAGMA table_info($table)",
             default => throw new \Exception("not supported driver '$driver'")
         };
@@ -338,26 +453,29 @@ class MakeModelSchema extends Command
                     $scopes[] = $lockedExistingScopes->pull($scopeName);
                 }
             } else {
-                $scope = [
-                    'id' => $scopeName,
-                ];
-
-                $parameters = $method->getParameters();
-                array_shift($parameters);
-                $useOperator = false;
-                foreach ($parameters as $index => $parameter) {
-                    if ($parameter->getName() == 'operator') {
-                        $useOperator = true;
-                        unset($parameters[$index]);
+                $usable = true;
+                $parameters = [];
+                $methodParameters = $method->getParameters();
+                array_shift($methodParameters); // remove query builder parameter
+                foreach ($methodParameters as $methodParameter) {
+                    $typeInfos = $this->getTypeFromFunctionParameterType($methodParameter);
+                    if (! isset($typeInfos['type'])) {
+                        $usable = false;
+                        break;
                     }
+                    $parameters[] = [
+                        'id' => $methodParameter->getName(),
+                        'name' => Str::snake($methodParameter->getName(), ' '),
+                        ...$typeInfos,
+                        'nullable' => $methodParameter->allowsNull(),
+                    ];
                 }
-                // manage scope with at most one value parameter
-                if (count($parameters) <= 1) {
-                    if (count($parameters) == 1) {
-                        $scope['type'] = $this->getTypeFromFunctionParameterType(current($parameters));
-                        $scope['use_operator'] = $useOperator;
-                    }
-                    $scopes[] = $scope;
+
+                if ($usable) {
+                    $scopes[] = [
+                        'id' => $scopeName,
+                        'parameters' => $parameters,
+                    ];
                 }
             }
         }
@@ -367,6 +485,9 @@ class MakeModelSchema extends Command
         return $scopes;
     }
 
+    /**
+     * @return ReflectionMethod[]
+     */
     private function getScopeMethods(Model $model): array
     {
         $scopeMethods = [];

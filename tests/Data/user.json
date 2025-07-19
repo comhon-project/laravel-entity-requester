@@ -4,72 +4,96 @@
     "properties": [
         {
             "id": "id",
-            "type": "integer"
+            "type": "integer",
+            "nullable": false
         },
         {
             "id": "email",
-            "type": "string"
+            "type": "string",
+            "nullable": false
         },
         {
             "id": "password",
-            "type": "string"
+            "type": "string",
+            "nullable": false
         },
         {
             "id": "name",
-            "type": "string"
+            "type": "string",
+            "nullable": false
         },
         {
             "id": "first_name",
-            "type": "string"
+            "type": "string",
+            "nullable": false
         },
         {
             "id": "preferred_locale",
-            "type": "string"
+            "type": "string",
+            "nullable": true
         },
         {
             "id": "birth_date",
-            "type": "datetime"
+            "type": "datetime",
+            "nullable": true
         },
         {
             "id": "birth_day",
-            "type": "date"
+            "type": "date",
+            "nullable": true
         },
         {
             "id": "birth_hour",
-            "type": "time"
+            "type": "time",
+            "nullable": true
         },
         {
             "id": "age",
-            "type": "integer"
+            "type": "integer",
+            "nullable": true
         },
         {
             "id": "score",
-            "type": "float"
+            "type": "float",
+            "nullable": true
         },
         {
             "id": "comment",
-            "type": "string"
+            "type": "string",
+            "nullable": true
         },
         {
             "id": "status",
             "type": "integer",
-            "enum": [1, 2, 3]
+            "enum": {
+                "1": "pending",
+                "2": "approved",
+                "3": "rejected"
+            },
+            "nullable": true
         },
         {
             "id": "favorite_fruits",
             "type": "array",
             "children": {
                 "type": "string",
-                "enum": ["apple", "orange", "strawberry"]
-            }
+                "enum": {
+                    "apple": "apple",
+                    "orange": "orange",
+                    "strawberry": "strawberry"
+                }
+            },
+            "nullable": true
         },
         {
             "id": "has_consumer_ability",
-            "type": "boolean"
+            "type": "boolean",
+            "nullable": false
         },
         {
             "id": "email_verified_at",
-            "type": "datetime"
+            "type": "datetime",
+            "nullable": true
         },
         {
             "id": "posts",
@@ -85,38 +109,97 @@
         }
     ],
     "unique_identifier": "id",
-    "primary_identifiers": null,
+    "primary_identifiers": ["name", "first_name"],
     "request": {
         "filtrable": {
             "properties": [],
             "scopes": [
                 {
-                    "id": "validated"
+                    "id": "validated",
+                    "parameters": []
                 },
                 {
                     "id": "age",
-                    "type": "integer",
-                    "use_operator": false
+                    "parameters": [
+                        {
+                            "id": "age",
+                            "name": "age",
+                            "type": "integer",
+                            "nullable": false
+                        }
+                    ]
                 },
                 {
                     "id": "bool",
-                    "type": "boolean",
-                    "use_operator": false
+                    "parameters": [
+                        {
+                            "id": "bool",
+                            "name": "bool",
+                            "type": "boolean",
+                            "nullable": false
+                        }
+                    ]
                 },
                 {
                     "id": "carbon",
-                    "type": "datetime",
-                    "use_operator": false
+                    "parameters": [
+                        {
+                            "id": "dateTime",
+                            "name": "date time",
+                            "type": "datetime",
+                            "nullable": true
+                        }
+                    ]
                 },
                 {
                     "id": "dateTime",
-                    "type": "datetime",
-                    "use_operator": false
+                    "parameters": [
+                        {
+                            "id": "dateTime",
+                            "name": "date time",
+                            "type": "datetime",
+                            "nullable": false
+                        }
+                    ]
                 },
                 {
                     "id": "foo",
-                    "type": "string",
-                    "use_operator": true
+                    "parameters": [
+                        {
+                            "id": "foo",
+                            "name": "foo",
+                            "type": "string",
+                            "nullable": false
+                        },
+                        {
+                            "id": "bar",
+                            "name": "bar",
+                            "type": "float",
+                            "nullable": false
+                        },
+                        {
+                            "id": "fruit",
+                            "name": "fruit",
+                            "type": "string",
+                            "enum": {
+                                "apple": "apple",
+                                "orange": "orange",
+                                "strawberry": "strawberry"
+                            },
+                            "nullable": false
+                        }
+                    ]
+                },
+                {
+                    "id": "resolvable",
+                    "parameters": [
+                        {
+                            "id": "resolvableParam",
+                            "name": "resolvable param",
+                            "type": "string",
+                            "nullable": false
+                        }
+                    ]
                 }
             ]
         },
