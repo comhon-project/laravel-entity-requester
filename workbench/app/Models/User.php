@@ -7,6 +7,7 @@ use App\Enums\Status;
 use Carbon\Carbon;
 use DateTime;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
 use Illuminate\Database\Eloquent\Casts\AsStringable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -44,6 +45,11 @@ class User extends Authenticatable
         'favorite_fruits' => AsEnumCollection::class.':'.Fruit::class,
     ];
 
+    public array $primaryIdentifiers = [
+        'name',
+        'first_name',
+    ];
+
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class, 'user_id');
@@ -76,7 +82,7 @@ class User extends Authenticatable
         $query->where('bool', $bool);
     }
 
-    public function scopeCarbon($query, Carbon $dateTime)
+    public function scopeCarbon($query, ?Carbon $dateTime = null)
     {
         $query->where('datetime', $dateTime);
     }
@@ -86,8 +92,23 @@ class User extends Authenticatable
         $query->where('datetime', $dateTime);
     }
 
-    public function scopeFoo($query, string $foo, string $operator)
+    public function scopeFoo(Builder $query, string $foo, float $bar, Fruit $fruit)
     {
-        $query->where('foo', $operator, $foo);
+        $query->where('foo', $foo);
+    }
+
+    public function scopeNotUsable($query, $notTyped)
+    {
+        $query->where('foo', $notTyped);
+    }
+
+    public function scopeResolvable($query, object $resolvableParam)
+    {
+        $query->where('foo', $resolvableParam);
+    }
+
+    public function scopeParamNotResolvable($query, object $object)
+    {
+        $query->where('foo', $object);
     }
 }
