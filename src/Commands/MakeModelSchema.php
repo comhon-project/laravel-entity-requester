@@ -3,6 +3,7 @@
 namespace Comhon\EntityRequester\Commands;
 
 use Carbon\Carbon;
+use Comhon\EntityRequester\Facades\EntityRequester;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use DateTime;
 use Illuminate\Console\Command;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
 use Illuminate\Database\Eloquent\Casts\AsStringable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -369,12 +372,20 @@ class MakeModelSchema extends Command
                         }
                     } elseif ($this->isVisibleProperty($model, $methodName)) {
                         $relation = $model->{$methodName}();
-                        $properties[] = [
+                        $property = [
                             'id' => $methodName,
                             'type' => 'relationship',
                             'relationship_type' => Str::snake((new ReflectionClass($relation))->getShortName()),
-                            'model' => $this->getModelUniqueName($relation->getRelated()),
                         ];
+                        if ($relation instanceof MorphTo) {
+                            $property['morph_type'] = $relation->getMorphType();
+                        } else {
+                            $property['model'] = $this->getModelUniqueName($relation->getRelated());
+                        }
+                        if ($relation instanceof BelongsTo) {
+                            $property['foreign_key'] = $relation->getForeignKeyName();
+                        }
+                        $properties[] = $property;
                     }
                 }
             }
@@ -593,7 +604,7 @@ class MakeModelSchema extends Command
 
     private function getSchemaPathWithoutExtension(Model $model)
     {
-        return base_path('schemas').DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
+        return EntityRequester::getSchemaDirectory().DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
     }
 
     private function getRequestOption(string $option, array $allowedValues): string

@@ -1,0 +1,30 @@
+{
+    "id": "post",
+    "name": "post",
+    "properties": [
+        {
+            "id": "id",
+            "type": "integer",
+            "nullable": false
+        },
+        {
+            "id": "name",
+            "type": "string",
+            "nullable": false
+        },
+        {
+            "id": "tag",
+            "type": "string",
+            "nullable": false
+        }
+    ],
+    "unique_identifier": "id",
+    "primary_identifiers": null,
+    "request": {
+        "filtrable": {
+            "properties": ["tag"],
+            "scopes": []
+        },
+        "sortable": ["name", "owner"]
+    }
+}

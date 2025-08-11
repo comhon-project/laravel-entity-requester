@@ -4,6 +4,7 @@ namespace Tests\Feature\Feature;
 
 use App\Models\User;
 use Comhon\EntityRequester\Commands\MakeModelSchema;
+use Comhon\EntityRequester\Facades\EntityRequester;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
@@ -23,6 +24,15 @@ class MakeModelSchemaComandTest extends TestCase
         if (file_exists($dir)) {
             File::deleteDirectory($dir);
         }
+
+        config([
+            'entity-requester.schema_directory' => $dir,
+        ]);
+    }
+
+    private function getSchemaPath(string $filename): string
+    {
+        return EntityRequester::getSchemaDirectory().DIRECTORY_SEPARATOR.$filename;
     }
 
     private function getExpectedSchemaPath(string $fileName)
@@ -120,8 +130,8 @@ class MakeModelSchemaComandTest extends TestCase
     {
         $this->callMakeModelSchemaCommand('User', [], $pretty);
 
-        $this->assertFileExists(base_path('schemas/user.json'));
-        $json = file_get_contents(base_path('schemas/user.json'));
+        $this->assertFileExists($this->getSchemaPath('user.json'));
+        $json = file_get_contents($this->getSchemaPath('user.json'));
         $this->assertEquals($pretty, str_contains($json, "\n"));
 
         $this->assertShemaStringEqualsShemaFile($this->getExpectedSchemaPath('user.json'), $json);
@@ -130,7 +140,7 @@ class MakeModelSchemaComandTest extends TestCase
     public function test_create_model_schema_full_name_space_success()
     {
         $this->callMakeModelSchemaCommand(User::class);
-        $this->assertFileExists(base_path('schemas/user.json'));
+        $this->assertFileExists($this->getSchemaPath('user.json'));
     }
 
     public function test_create_model_schema_failure_no_public_name()
@@ -149,8 +159,8 @@ class MakeModelSchemaComandTest extends TestCase
     {
         $this->callMakeModelSchemaCommand('Visible');
 
-        $this->assertFileExists(base_path('schemas/visible.json'));
-        $json = file_get_contents(base_path('schemas/visible.json'));
+        $this->assertFileExists($this->getSchemaPath('visible.json'));
+        $json = file_get_contents($this->getSchemaPath('visible.json'));
 
         $expected = <<<'EOT'
             {
@@ -178,12 +188,67 @@ class MakeModelSchemaComandTest extends TestCase
         $this->assertShemaStringEqualsShemaString($expected, $json);
     }
 
+    public function test_create_model_schema_with_morph_to_relation_success()
+    {
+        $this->callMakeModelSchemaCommand('Purchase');
+
+        $this->assertFileExists($this->getSchemaPath('purchase.json'));
+        $json = file_get_contents($this->getSchemaPath('purchase.json'));
+
+        $expected = <<<'EOT'
+            {
+                "id": "purchase",
+                "name": "purchase",
+                "properties": [
+                    {
+                        "id": "id",
+                        "type": "integer",
+                        "nullable": false
+                    },
+                    {
+                        "id": "amount",
+                        "type": "integer",
+                        "nullable": false
+                    },
+                    {
+                        "id": "buyer_id",
+                        "type": "integer",
+                        "nullable": false
+                    },
+                    {
+                        "id": "buyer_type",
+                        "type": "string",
+                        "nullable": false
+                    },
+                    {
+                        "id": "buyer",
+                        "type": "relationship",
+                        "relationship_type": "morph_to",
+                        "morph_type": "buyer_type",
+                        "foreign_key": "buyer_id"
+                    }
+                ],
+                "unique_identifier": "id",
+                "primary_identifiers": null,
+                "request": {
+                    "filtrable": {
+                        "properties": [],
+                        "scopes": []
+                    },
+                    "sortable": []
+                }
+            }
+            EOT;
+
+        $this->assertShemaStringEqualsShemaString($expected, $json);
+    }
+
     #[DataProvider('providerFiltrableOptions')]
     public function test_create_model_schema_filtrable_option($option, $expectedFiltrable)
     {
         $this->callMakeModelSchemaCommand(User::class, ['--filtrable' => $option]);
-        $this->assertFileExists(base_path('schemas/user.json'));
-        $json = file_get_contents(base_path('schemas/user.json'));
+        $this->assertFileExists($this->getSchemaPath('user.json'));
+        $json = file_get_contents($this->getSchemaPath('user.json'));
 
         $expected = str_replace(
             '"properties": []',
@@ -222,6 +287,7 @@ class MakeModelSchemaComandTest extends TestCase
                     'email_verified_at',
                     'posts',
                     'friends',
+                    'purchases',
                 ],
             ],
             [
@@ -260,8 +326,8 @@ class MakeModelSchemaComandTest extends TestCase
     public function test_create_model_schema_sortable_option($option, $expectedSortable)
     {
         $this->callMakeModelSchemaCommand(User::class, ['--sortable' => $option]);
-        $this->assertFileExists(base_path('schemas/user.json'));
-        $json = file_get_contents(base_path('schemas/user.json'));
+        $this->assertFileExists($this->getSchemaPath('user.json'));
+        $json = file_get_contents($this->getSchemaPath('user.json'));
 
         $expected = str_replace(
             '"sortable": []',
@@ -313,25 +379,25 @@ class MakeModelSchemaComandTest extends TestCase
     #[DataProvider('providerBoolean')]
     public function test_update_model_schema_success($fresh)
     {
-        mkdir(base_path('schemas'));
+        mkdir(EntityRequester::getSchemaDirectory());
         copy(
             $this->getDataFilePath('user-partial.json'),
-            base_path('schemas/user.json')
+            $this->getSchemaPath('user.json')
         );
         copy(
             $this->getDataFilePath('user.lock'),
-            base_path('schemas/user.lock')
+            $this->getSchemaPath('user.lock')
         );
         $this->callMakeModelSchemaCommand(User::class, [
             '--filtrable' => $fresh ? 'none' : 'all',
             '--sortable' => $fresh ? 'none' : 'attributes',
             ...($fresh ? ['--fresh' => true] : []),
         ]);
-        $this->assertFileExists(base_path('schemas/user.json'));
+        $this->assertFileExists($this->getSchemaPath('user.json'));
 
         $filename = $fresh ? 'user.json' : 'user-updated.json';
 
-        $this->assertShemaFileEqualsShemaFile($this->getExpectedSchemaPath($filename), base_path('schemas/user.json'));
+        $this->assertShemaFileEqualsShemaFile($this->getExpectedSchemaPath($filename), $this->getSchemaPath('user.json'));
     }
 
     public function test_mismatching_names()

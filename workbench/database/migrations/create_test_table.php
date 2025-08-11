@@ -44,6 +44,22 @@ return new class extends Migration
             $table->string('visible_hidden', 255);
             $table->string('hidden', 255);
         });
+        Schema::create('posts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('owner_id')->constrained('users');
+            $table->string('name', 255);
+            $table->string('tag', 255);
+        });
+        Schema::create('purchases', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('amount');
+            $table->foreignId('buyer_id');
+            $table->string('buyer_type');
+        });
+        Schema::create('friendships', function (Blueprint $table) {
+            $table->foreignId('from_id')->constrained('users');
+            $table->foreignId('to_id')->constrained('users');
+        });
     }
 
     /**

@@ -1,0 +1,42 @@
+{
+    "id": "purchase",
+    "name": "purchase",
+    "properties": [
+        {
+            "id": "id",
+            "type": "integer",
+            "nullable": false
+        },
+        {
+            "id": "amount",
+            "type": "integer",
+            "nullable": false
+        },
+        {
+            "id": "buyer_id",
+            "type": "integer",
+            "nullable": false
+        },
+        {
+            "id": "buyer_type",
+            "type": "string",
+            "nullable": false
+        },
+        {
+            "id": "buyer",
+            "type": "relationship",
+            "relationship_type": "morph_to",
+            "morph_type": "buyer_type",
+            "foreign_key": "buyer_id"
+        }
+    ],
+    "unique_identifier": "id",
+    "primary_identifiers": null,
+    "request": {
+        "filtrable": {
+            "properties": [],
+            "scopes": []
+        },
+        "sortable": ["buyer", "amount"]
+    }
+}

@@ -24,8 +24,8 @@
         },
         {
             "id": "first_name",
-            "type": "float",
-            "nullable": true
+            "type": "string",
+            "nullable": false
         },
         {
             "id": "preferred_locale",
@@ -96,10 +96,6 @@
             "nullable": true
         },
         {
-            "id": "locked_property",
-            "type": "float"
-        },
-        {
             "id": "posts",
             "type": "relationship",
             "relationship_type": "has_many",
@@ -121,6 +117,7 @@
     "unique_identifier": "id",
     "primary_identifiers": ["name", "first_name"],
     "request": {
+        "default_sort": [{ "property": "name" }, { "property": "first_name" }],
         "filtrable": {
             "properties": [
                 "id",
@@ -137,11 +134,9 @@
                 "favorite_fruits",
                 "has_consumer_ability",
                 "email_verified_at",
-                "locked_property",
                 "posts",
                 "friends",
-                "purchases",
-                "property_doesnt_exist"
+                "purchases"
             ],
             "scopes": [
                 {
@@ -214,8 +209,7 @@
                             "enum": {
                                 "apple": "apple",
                                 "orange": "orange",
-                                "strawberry": "strawberry",
-                                "LOCKED": "locked"
+                                "strawberry": "strawberry"
                             },
                             "nullable": false
                         }
@@ -229,17 +223,6 @@
                             "name": "resolvable param",
                             "type": "string",
                             "nullable": false
-                        }
-                    ]
-                },
-                {
-                    "id": "locked_scope",
-                    "parameters": [
-                        {
-                            "id": "foo",
-                            "name": "foo",
-                            "type": "array",
-                            "children": { "type": "integer" }
                         }
                     ]
                 }
@@ -259,8 +242,9 @@
             "favorite_fruits",
             "has_consumer_ability",
             "email_verified_at",
-            "locked_property",
-            "property_doesnt_exist"
+            "posts",
+            "friends",
+            "purchases"
         ]
     }
 }

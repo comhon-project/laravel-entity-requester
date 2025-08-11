@@ -106,6 +106,12 @@
             "type": "relationship",
             "relationship_type": "belongs_to_many",
             "model": "user"
+        },
+        {
+            "id": "purchases",
+            "type": "relationship",
+            "relationship_type": "morph_many",
+            "model": "purchase"
         }
     ],
     "unique_identifier": "id",

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Casts\AsStringable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -52,18 +53,23 @@ class User extends Authenticatable
 
     public function posts(): HasMany
     {
-        return $this->hasMany(Post::class, 'user_id');
+        return $this->hasMany(Post::class, 'owner_id');
     }
 
     public function friends(): BelongsToMany
     {
-        return $this->belongsToMany(User::class);
+        return $this->belongsToMany(User::class, 'friendships', 'from_id', 'to_id');
     }
 
     #[\Deprecated]
     public function amis(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
+    }
+
+    public function purchases(): MorphMany
+    {
+        return $this->morphMany(Purchase::class, 'buyer');
     }
 
     public function scopeValidated($query)
@@ -94,21 +100,21 @@ class User extends Authenticatable
 
     public function scopeFoo(Builder $query, string $foo, float $bar, Fruit $fruit)
     {
-        $query->where('foo', $foo);
+        $query->where('comment', "$foo-$bar-{$fruit->value}");
     }
 
     public function scopeNotUsable($query, $notTyped)
     {
-        $query->where('foo', $notTyped);
+        $query->where('comment', $notTyped);
     }
 
     public function scopeResolvable($query, object $resolvableParam)
     {
-        $query->where('foo', $resolvableParam);
+        $query->where('comment', $resolvableParam);
     }
 
     public function scopeParamNotResolvable($query, object $object)
     {
-        $query->where('foo', $object);
+        $query->where('comment', $object);
     }
 }

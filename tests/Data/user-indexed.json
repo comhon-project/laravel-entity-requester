@@ -1,68 +1,68 @@
 {
     "id": "user",
     "name": "user",
-    "properties": [
-        {
+    "properties": {
+        "id": {
             "id": "id",
             "type": "integer",
             "nullable": false
         },
-        {
+        "email": {
             "id": "email",
             "type": "string",
             "nullable": false
         },
-        {
+        "password": {
             "id": "password",
             "type": "string",
             "nullable": false
         },
-        {
+        "name": {
             "id": "name",
             "type": "string",
             "nullable": false
         },
-        {
+        "first_name": {
             "id": "first_name",
-            "type": "float",
-            "nullable": true
+            "type": "string",
+            "nullable": false
         },
-        {
+        "preferred_locale": {
             "id": "preferred_locale",
             "type": "string",
             "nullable": true
         },
-        {
+        "birth_date": {
             "id": "birth_date",
             "type": "datetime",
             "nullable": true
         },
-        {
+        "birth_day": {
             "id": "birth_day",
             "type": "date",
             "nullable": true
         },
-        {
+        "birth_hour": {
             "id": "birth_hour",
             "type": "time",
             "nullable": true
         },
-        {
+        "age": {
             "id": "age",
             "type": "integer",
             "nullable": true
         },
-        {
+        "score": {
             "id": "score",
             "type": "float",
             "nullable": true
         },
-        {
+        "comment": {
             "id": "comment",
             "type": "string",
             "nullable": true
         },
-        {
+        "status": {
             "id": "status",
             "type": "integer",
             "enum": {
@@ -72,7 +72,7 @@
             },
             "nullable": true
         },
-        {
+        "favorite_fruits": {
             "id": "favorite_fruits",
             "type": "array",
             "children": {
@@ -85,70 +85,65 @@
             },
             "nullable": true
         },
-        {
+        "has_consumer_ability": {
             "id": "has_consumer_ability",
             "type": "boolean",
             "nullable": false
         },
-        {
+        "email_verified_at": {
             "id": "email_verified_at",
             "type": "datetime",
             "nullable": true
         },
-        {
-            "id": "locked_property",
-            "type": "float"
-        },
-        {
+        "posts": {
             "id": "posts",
             "type": "relationship",
             "relationship_type": "has_many",
             "model": "post"
         },
-        {
+        "friends": {
             "id": "friends",
             "type": "relationship",
             "relationship_type": "belongs_to_many",
             "model": "user"
         },
-        {
+        "purchases": {
             "id": "purchases",
             "type": "relationship",
             "relationship_type": "morph_many",
             "model": "purchase"
         }
-    ],
+    },
     "unique_identifier": "id",
     "primary_identifiers": ["name", "first_name"],
     "request": {
+        "default_sort": [{ "property": "name" }, { "property": "first_name" }],
         "filtrable": {
-            "properties": [
-                "id",
-                "email",
-                "first_name",
-                "preferred_locale",
-                "birth_date",
-                "birth_day",
-                "birth_hour",
-                "age",
-                "score",
-                "comment",
-                "status",
-                "favorite_fruits",
-                "has_consumer_ability",
-                "email_verified_at",
-                "locked_property",
-                "posts",
-                "friends",
-                "purchases",
-                "property_doesnt_exist"
-            ],
-            "scopes": [
-                {
+            "properties": {
+                "id": "id",
+                "email": "email",
+                "first_name": "first_name",
+                "preferred_locale": "preferred_locale",
+                "birth_date": "birth_date",
+                "birth_day": "birth_day",
+                "birth_hour": "birth_hour",
+                "age": "age",
+                "score": "score",
+                "comment": "comment",
+                "status": "status",
+                "favorite_fruits": "favorite_fruits",
+                "has_consumer_ability": "has_consumer_ability",
+                "email_verified_at": "email_verified_at",
+                "posts": "posts",
+                "friends": "friends",
+                "purchases": "purchases"
+            },
+            "scopes": {
+                "validated": {
                     "id": "validated",
                     "parameters": []
                 },
-                {
+                "age": {
                     "id": "age",
                     "parameters": [
                         {
@@ -159,7 +154,7 @@
                         }
                     ]
                 },
-                {
+                "bool": {
                     "id": "bool",
                     "parameters": [
                         {
@@ -170,7 +165,7 @@
                         }
                     ]
                 },
-                {
+                "carbon": {
                     "id": "carbon",
                     "parameters": [
                         {
@@ -181,7 +176,7 @@
                         }
                     ]
                 },
-                {
+                "dateTime": {
                     "id": "dateTime",
                     "parameters": [
                         {
@@ -192,7 +187,7 @@
                         }
                     ]
                 },
-                {
+                "foo": {
                     "id": "foo",
                     "parameters": [
                         {
@@ -214,14 +209,13 @@
                             "enum": {
                                 "apple": "apple",
                                 "orange": "orange",
-                                "strawberry": "strawberry",
-                                "LOCKED": "locked"
+                                "strawberry": "strawberry"
                             },
                             "nullable": false
                         }
                     ]
                 },
-                {
+                "resolvable": {
                     "id": "resolvable",
                     "parameters": [
                         {
@@ -231,36 +225,26 @@
                             "nullable": false
                         }
                     ]
-                },
-                {
-                    "id": "locked_scope",
-                    "parameters": [
-                        {
-                            "id": "foo",
-                            "name": "foo",
-                            "type": "array",
-                            "children": { "type": "integer" }
-                        }
-                    ]
                 }
-            ]
+            }
         },
-        "sortable": [
-            "id",
-            "email",
-            "preferred_locale",
-            "birth_date",
-            "birth_day",
-            "birth_hour",
-            "age",
-            "score",
-            "comment",
-            "status",
-            "favorite_fruits",
-            "has_consumer_ability",
-            "email_verified_at",
-            "locked_property",
-            "property_doesnt_exist"
-        ]
+        "sortable": {
+            "id": "id",
+            "email": "email",
+            "preferred_locale": "preferred_locale",
+            "birth_date": "birth_date",
+            "birth_day": "birth_day",
+            "birth_hour": "birth_hour",
+            "age": "age",
+            "score": "score",
+            "comment": "comment",
+            "status": "status",
+            "favorite_fruits": "favorite_fruits",
+            "has_consumer_ability": "has_consumer_ability",
+            "email_verified_at": "email_verified_at",
+            "posts": "posts",
+            "friends": "friends",
+            "purchases": "purchases"
+        }
     }
 }

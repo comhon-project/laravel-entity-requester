@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Models\Post;
+use App\Models\Purchase;
 use App\Models\User;
 use App\Resolver\ModelResolver;
 use App\Visible;
 use Comhon\EntityRequester\Commands\MakeModelSchema;
 use Comhon\ModelResolverContract\ModelResolverInterface;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 use ReflectionParameter;
 
@@ -22,16 +24,9 @@ class WorkbenchServiceProvider extends ServiceProvider
             return (new ModelResolver)
                 ->bind('user', User::class)
                 ->bind('post', Post::class)
-                ->bind('visible', Visible::class);
+                ->bind('visible', Visible::class)
+                ->bind('purchase', Purchase::class);
         });
-
-        $reslover = fn ($type) => $type == 'hashed' ? ['type' => 'string'] : null;
-        MakeModelSchema::registerColumnTypeResolver($reslover);
-        MakeModelSchema::registerCastTypeResolver($reslover);
-
-        $reslover = fn (ReflectionParameter $param) => $param->getName() == 'resolvableParam'
-            ? ['type' => 'string'] : null;
-        MakeModelSchema::registerParamTypeResolver($reslover);
     }
 
     /**
@@ -39,6 +34,24 @@ class WorkbenchServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $resolver = fn ($type) => $type == 'hashed' ? ['type' => 'string'] : null;
+        MakeModelSchema::registerColumnTypeResolver($resolver);
+        MakeModelSchema::registerCastTypeResolver($resolver);
+
+        $resolver = fn (ReflectionParameter $param) => $param->getName() == 'resolvableParam'
+            ? ['type' => 'string'] : null;
+        MakeModelSchema::registerParamTypeResolver($resolver);
+
+        $workbenchDir = dirname(__DIR__, 2);
+        config([
+            'entity-requester.schema_directory' => $workbenchDir.'/schemas',
+        ]);
+
+        Relation::enforceMorphMap([
+            'user' => User::class,
+            'post' => Post::class,
+            'visible' => Visible::class,
+            'purchase' => Purchase::class,
+        ]);
     }
 }

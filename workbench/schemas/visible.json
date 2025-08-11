@@ -1,0 +1,20 @@
+{
+    "id": "visible",
+    "name": "visible",
+    "properties": [
+        {
+            "id": "visible",
+            "type": "string",
+            "nullable": false
+        }
+    ],
+    "unique_identifier": "id",
+    "primary_identifiers": null,
+    "request": {
+        "filtrable": {
+            "properties": [],
+            "scopes": []
+        },
+        "sortable": []
+    }
+}
