@@ -8,6 +8,7 @@ use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Enums\OrderDirection;
 use Comhon\EntityRequester\Enums\RelationshipConditionOperator;
 use Comhon\EntityRequester\Exceptions\EnumValueException;
+use Comhon\EntityRequester\Exceptions\InvalidConditionOperatorException;
 use Comhon\EntityRequester\Exceptions\MalformedValueException;
 use Comhon\EntityRequester\Exceptions\MissingValueException;
 use Comhon\ModelResolverContract\ModelResolverInterface;
@@ -155,8 +156,8 @@ class EntityRequest
             $filter['operator'] = '=';
         }
         $operator = ConditionOperator::tryFrom(strtoupper($filter['operator']));
-        if (! $operator) {
-            throw new EnumValueException($this->getStack('operator', $stack), ConditionOperator::class);
+        if (! $operator || ! $operator->isSupported()) {
+            throw new InvalidConditionOperatorException($this->getStack('operator', $stack));
         }
         if (! array_key_exists('value', $filter)) {
             throw new MissingValueException($this->getStack('value', $stack));

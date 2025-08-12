@@ -16,6 +16,7 @@ use Comhon\EntityRequester\Exceptions\InvalidSortPropertyException;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
+use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
 use Comhon\EntityRequester\Interfaces\SchemaFactoryInterface;
 use Comhon\EntityRequester\Schema\Schema;
 use Illuminate\Database\Eloquent\Builder;
@@ -112,6 +113,10 @@ class EntityRequestBuilder
 
         $table = empty($table) ? $query->getModel()->getTable() : $table;
         $column = "$table.$propertyId";
+
+        if (! $condition->getOperator()->isSupported()) {
+            throw new NotSupportedOperatorException($condition->getOperator());
+        }
 
         if ($and) {
             if ($condition->getOperator() == ConditionOperator::In) {

@@ -5,11 +5,15 @@ namespace Tests\Feature\Feature;
 use App\Enums\Fruit;
 use App\Models\User;
 use Comhon\EntityRequester\Database\EntityRequestBuilder;
+use Comhon\EntityRequester\DTOs\Condition;
+use Comhon\EntityRequester\DTOs\EntityRequest;
+use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidSortPropertyException;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
+use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -25,7 +29,11 @@ class EntityRequesterBuilderTest extends TestCase
             $rawSql = str_replace('"', '`', $rawSql);
         }
         if ($driver == 'pgsql') {
-            $rawSql = str_replace(['" LIKE ', '" NOT LIKE '], ['"::text LIKE ', '"::text NOT LIKE '], $rawSql);
+            $rawSql = str_replace(
+                ['" LIKE ', '" NOT LIKE ', '" ILIKE ', '" NOT ILIKE '],
+                ['"::text LIKE ', '"::text NOT LIKE ', '"::text ILIKE ', '"::text NOT ILIKE '],
+                $rawSql
+            );
         }
 
         return $rawSql;
@@ -123,6 +131,33 @@ class EntityRequesterBuilderTest extends TestCase
                 'parameters' => [[], 123.321, Fruit::Apple->value],
             ],
         ]);
+    }
+
+    #[DataProvider('providerBoolean')]
+    public function test_build_entity_request_ilike_supported(bool $not)
+    {
+        config(['database.default' => 'pgsql']);
+        $operator = $not ? ConditionOperator::NotIlike : ConditionOperator::Ilike;
+        $entityRequest = new EntityRequest(null, User::class);
+        $entityRequest->setFilter(new Condition('email', $operator, 'gmail'));
+
+        $query = EntityRequestBuilder::fromEntityRequest($entityRequest);
+
+        $sql = 'select * from "users" where "users"."email"::text '.$operator->value.' ? order by "name" asc, "first_name" asc';
+        $this->assertEquals($sql, $query->toSql());
+    }
+
+    #[DataProvider('providerBoolean')]
+    public function test_build_entity_request_ilike_not_supported(bool $not)
+    {
+        config(['database.default' => 'mysql']);
+        $operator = $not ? ConditionOperator::NotIlike : ConditionOperator::Ilike;
+        $entityRequest = new EntityRequest(null, User::class);
+        $entityRequest->setFilter(new Condition('email', $operator, 'gmail'));
+
+        $this->expectException(NotSupportedOperatorException::class);
+        $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, IN, NOT IN, LIKE, NOT LIKE]");
+        EntityRequestBuilder::fromEntityRequest($entityRequest);
     }
 
     public function test_build_entity_request_invalid_relationship_sort_property()

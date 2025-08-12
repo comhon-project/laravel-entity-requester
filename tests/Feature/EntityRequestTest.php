@@ -172,6 +172,11 @@ class EntityRequestTest extends TestCase
     #[DataProvider('provider_build_entity_request_invalid')]
     public function test_instanciate_entity_request_invalid($data, $error)
     {
+        $isConditionOperatorError = $error == "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, IN, NOT IN, LIKE, NOT LIKE]";
+        if ($isConditionOperatorError && config('database.default') == 'pgsql') {
+            $error = str_replace(']', ', ILIKE, NOT ILIKE]', $error);
+        }
+
         $this->expectExceptionMessage($error);
         new EntityRequest([
             'model' => 'user',
