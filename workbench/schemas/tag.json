@@ -1,6 +1,6 @@
 {
-    "id": "post",
-    "name": "post",
+    "id": "tag",
+    "name": "tag",
     "properties": [
         {
             "id": "id",
@@ -13,10 +13,16 @@
             "nullable": false
         },
         {
-            "id": "tags",
+            "id": "posts",
             "type": "relationship",
             "relationship_type": "morph_to_many",
-            "model": "tag"
+            "model": "post"
+        },
+        {
+            "id": "purchases",
+            "type": "relationship",
+            "relationship_type": "morph_to_many",
+            "model": "purchase"
         }
     ],
     "unique_identifier": "id",
@@ -24,13 +30,8 @@
     "request": {
         "filtrable": {
             "properties": ["name"],
-            "scopes": [
-                {
-                    "id": "validated",
-                    "parameters": []
-                }
-            ]
+            "scopes": []
         },
-        "sortable": ["name", "owner", "tags", "publicTags"]
+        "sortable": ["id", "name", "posts", "purchases"]
     }
 }

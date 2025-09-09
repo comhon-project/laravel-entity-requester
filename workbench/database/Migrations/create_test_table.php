@@ -31,11 +31,12 @@ return new class extends Migration
             $table->string('favorite_fruits', 15)->nullable();
             $table->boolean('has_consumer_ability')->default(false);
             $table->timestamp('email_verified_at')->nullable();
+            $table->foreignId('parent_id')->nullable()->constrained('users');
 
             if (DB::connection()->getDriverName() != 'pgsql') {
-                $table->geometry('positions');
+                $table->geometry('positions')->nullable();
             } else {
-                $table->binary('positions');
+                $table->binary('positions')->nullable();
             }
         });
         Schema::create('visibles', function (Blueprint $table) {
@@ -48,7 +49,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('owner_id')->constrained('users');
             $table->string('name', 255);
-            $table->string('tag', 255);
         });
         Schema::create('purchases', function (Blueprint $table) {
             $table->id();
@@ -59,6 +59,15 @@ return new class extends Migration
         Schema::create('friendships', function (Blueprint $table) {
             $table->foreignId('from_id')->constrained('users');
             $table->foreignId('to_id')->constrained('users');
+        });
+        Schema::create('tags', function (Blueprint $table) {
+            $table->id();
+            $table->string('name', 255);
+        });
+        Schema::create('taggables', function (Blueprint $table) {
+            $table->foreignId('tag_id')->constrained('tags');
+            $table->foreignId('taggable_id');
+            $table->string('taggable_type');
         });
     }
 

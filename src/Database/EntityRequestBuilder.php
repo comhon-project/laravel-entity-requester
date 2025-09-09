@@ -13,6 +13,7 @@ use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Enums\RelationshipConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidSortPropertyException;
+use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
@@ -21,8 +22,17 @@ use Comhon\EntityRequester\Interfaces\SchemaFactoryInterface;
 use Comhon\EntityRequester\Schema\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneOrManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Facades\DB;
 use ReflectionMethod;
 
 class EntityRequestBuilder
@@ -84,14 +94,21 @@ class EntityRequestBuilder
     /**
      * @param  string  $table  if specified, column name will be prefixed by given table name
      */
-    private function addFilter(Schema $schema, Builder $query, AbstractCondition $filter, bool $and = true, ?string $table = null)
-    {
+    private function addFilter(
+        Schema $schema,
+        Builder|JoinClause $query,
+        AbstractCondition $filter,
+        bool $and = true,
+        ?string $table = null
+    ): Builder|JoinClause {
         match (get_class($filter)) {
             Condition::class => $this->addCondition($schema, $query, $filter, $and, $table),
             Group::class => $this->addGroup($schema, $query, $filter, $and, $table),
             Scope::class => $this->addScope($schema, $query, $filter, $and),
-            RelationshipCondition::class => $this->addRelationshipCondition($query, $filter, $and),
+            RelationshipCondition::class => $this->addRelationshipCondition($schema, $query, $filter, $and, $table),
         };
+
+        return $query;
     }
 
     /**
@@ -99,20 +116,25 @@ class EntityRequestBuilder
      */
     private function addCondition(
         Schema $schema,
-        Builder $query,
+        Builder|JoinClause $query,
         Condition $condition,
         bool $and = true,
         ?string $table = null
     ) {
         $propertyId = $condition->getProperty();
-        $value = $condition->getValue();
 
         if (! $schema->isFiltrable($propertyId)) {
             throw new NotFiltrableException($propertyId);
         }
 
-        $table = empty($table) ? $query->getModel()->getTable() : $table;
+        if (empty($table)) {
+            $table = $query instanceof JoinClause
+                ? (str_contains($table = $query->table, ' as ') ? explode(' as ', $table)[1] : $table)
+                : $query->getModel()->getTable();
+        }
+
         $column = "$table.$propertyId";
+        $value = $condition->getValue();
 
         if (! $condition->getOperator()->isSupported()) {
             throw new NotSupportedOperatorException($condition->getOperator());
@@ -142,7 +164,7 @@ class EntityRequestBuilder
      */
     private function addGroup(
         Schema $schema,
-        Builder $query,
+        Builder|JoinClause $query,
         Group $group,
         bool $and,
         ?string $table = null
@@ -159,21 +181,43 @@ class EntityRequestBuilder
         }
     }
 
-    private function addRelationshipCondition(Builder $query, RelationshipCondition $condition, bool $and)
-    {
-        $schema = $this->schemaFactory->get(get_class($query->getRelation($condition->getProperty())->getRelated()));
+    private function addRelationshipCondition(
+        Schema $schema,
+        Builder $query,
+        RelationshipCondition $condition,
+        bool $and,
+        ?string $table,
+    ) {
+        $operator = '>=';
+        $count = 1;
+        $propertyId = $condition->getProperty();
+        $filter = $condition->getFilter();
+
+        if (! $schema->isFiltrable($propertyId)) {
+            throw new NotFiltrableException($propertyId);
+        }
 
         $callWhere = $condition->getOperator() == RelationshipConditionOperator::Has
             ? ($and ? 'whereHas' : 'orWhereHas')
             : ($and ? 'whereDoesntHave' : 'orWhereDoesntHave');
 
-        $callback = $condition->getFilter()
-            ? function ($subquery) use ($condition, $schema) {
-                $this->addFilter($schema, $subquery, $condition->getFilter());
+        $callback = $filter
+            ? function ($subquery, $type = null) use ($query, $propertyId, $filter, $table) {
+                if ($table) {
+                    $first = explode('.', $subquery->getQuery()->wheres[0]['first']);
+                    $subquery->getQuery()->wheres[0]['first'] = $table.".{$first[1]}";
+                }
+                $relation = $query->getRelation($propertyId);
+                $class = $relation instanceof MorphTo
+                    ? (Relation::getMorphedModel($type) ?? $type)
+                    : get_class($relation->getRelated());
+
+                $schemaProperty = $this->schemaFactory->get($class);
+                $this->addFilter($schemaProperty, $subquery, $filter);
             }
         : null;
 
-        $query->$callWhere($condition->getProperty(), $callback);
+        $query->$callWhere($propertyId, $callback, $operator, $count);
     }
 
     private function addScope(Schema $schema, Builder $query, Scope $scope, bool $and)
@@ -232,8 +276,8 @@ class EntityRequestBuilder
             throw new NotSortableException($relationName);
         }
         $relation = $query->getRelation($relationName);
-        if (! $relation instanceof HasOneOrMany && get_class($relation) !== BelongsTo::class) {
-            throw new \Exception('relation not managed : '.get_class($relation));
+        if ($relation instanceof MorphTo) {
+            throw new \Exception('MorphTo relations not managed for sorting');
         }
 
         $requestedModel = $query->getModel();
@@ -242,30 +286,115 @@ class EntityRequestBuilder
         if (! $foreignSchema->isSortable($sortProperty)) {
             throw new NotSortableException($sortProperty);
         }
-        if ($relation instanceof HasOneOrMany) {
-            $leftOn = $relation->getQualifiedParentKeyName();
-            $rightOn = $relation->getQualifiedForeignKeyName();
+
+        $filter = $relationshipSort['filter'] ?? null;
+
+        $joinType = 'left';
+        $aliasLeft = null;
+        $aliasRight = null;
+
+        // We don’t have control over scopes and relations with conditions,
+        // especially when it comes to table aliases and qualified columns.
+        // To avoid SQL errors, we use subqueries to isolate conditions
+        // that won’t be affected by the rest of the query.
+        $needSubquery = $this->hasFilterClass($filter, Scope::class)
+            || count($relation->getQuery()->getQuery()->wheres) > 0;
+
+        if ($needSubquery) {
+            $eloquentSubQuery = $relation->getQuery();
+            if ($relation instanceof MorphToMany) {
+                $morphColumn = $relation->getTable().'.'.$relation->getMorphType();
+                $joins = $eloquentSubQuery->getQuery()->joins;
+                $join = $joins[array_key_last($joins)];
+                $join->where($morphColumn, $relation->getMorphClass());
+                $eloquentSubQuery->getQuery()->addBinding($join->getBindings(), 'join');
+            } elseif ($relation instanceof MorphOneOrMany) {
+                $morphColumn = $relation->getRelated()->getTable().'.'.$relation->getMorphType();
+                $eloquentSubQuery->where($morphColumn, $relation->getMorphClass());
+            }
+            if ($filter) {
+                $this->addFilter($foreignSchema, $eloquentSubQuery, $filter, true);
+            }
+
+            $aliasRight = Utils::generateAlias("sub_{$relation->getRelated()->getTable()}");
+            [$leftOn, $rightOnSub] = RelationJoiner::getjoinColumns($relation, $aliasLeft);
+
+            if ($relation instanceof BelongsToMany || $relation instanceof HasOneOrManyThrough) {
+                $aliasColumn = Utils::generateAlias(explode('.', $rightOnSub)[1]);
+                $eloquentSubQuery->select(
+                    $relation->getRelated()->getTable().'.*',
+                    "$rightOnSub as $aliasColumn",
+                );
+                $rightOn = Utils::qualify($aliasColumn, $aliasRight);
+            } else {
+                $rightOn = Utils::qualify($rightOnSub, $aliasRight);
+            }
+
+            $query->joinSub(
+                $eloquentSubQuery,
+                $aliasRight,
+                function ($join) use ($leftOn, $rightOn) {
+                    $join->on($leftOn, $rightOn);
+                },
+                type: $joinType,
+            );
         } else {
-            $leftOn = $relation->getQualifiedForeignKeyName();
-            $rightOn = $relation->getQualifiedOwnerKeyName();
+            $aliasRight = RelationJoiner::joinRelation($query, $relation, $aliasLeft, null, $joinType);
+
+            if ($filter) {
+                $originalQueryModel = $query->getModel();
+                $relatedModel = $relation->getRelated();
+                $query->setModel($relatedModel);
+                if ($this->hasFilterClass($filter, RelationshipCondition::class)) {
+                    $this->addFilter($foreignSchema, $query, $filter, true, $aliasRight)
+                        ->orWhereNull("{$aliasRight}.{$relatedModel->getKeyName()}");
+                } else {
+                    $joins = $query->getQuery()->joins;
+                    $join = $joins[array_key_last($joins)];
+                    $this->addFilter($foreignSchema, $join, $filter, true);
+                    $query->getQuery()->addBinding($join->getBindings(), 'where');
+                }
+                $query->setModel($originalQueryModel);
+            }
         }
 
-        $query->select($requestedModel->getTable().'.*')
-            ->leftJoin($relation->getRelated()->getTable(), $leftOn, '=', $rightOn)
-            ->where(function ($query) use ($relationshipSort, $foreignSchema, $relation, $rightOn) {
-                $query->where(function ($query) use ($relationshipSort, $foreignSchema, $relation) {
-                    if ($relation instanceof MorphOneOrMany) {
-                        $query->where($relation->getQualifiedMorphType(), $relation->getMorphClass());
-                    }
-                    if (isset($relationshipSort['filter'])) {
-                        $this->addFilter($foreignSchema, $query, $relationshipSort['filter'], true, $relation->getRelated()->getTable());
-                    }
-                });
-                if (($relation instanceof MorphOneOrMany) || isset($relationshipSort['filter'])) {
-                    $query->orWhereNull($rightOn);
+        $query->select($requestedModel->getTable().'.*');
+
+        $qualifedProperty = "{$aliasRight}.{$sortProperty}";
+        $order = $relationshipSort['order']->value;
+        $isToOne = $relation instanceof HasOne
+            || $relation instanceof BelongsTo
+            || $relation instanceof HasOneThrough
+            || $relation instanceof MorphOne;
+
+        if ($isToOne) {
+            $query->orderBy($qualifedProperty, $order);
+        } else {
+            if (! isset($relationshipSort['aggregation'])) {
+                throw new InvalidToManySortException($relationshipSort['property']);
+            }
+            $aggregation = $relationshipSort['aggregation']->value;
+            $qualifedProperty = DB::getQueryGrammar()->wrap($qualifedProperty);
+            $query->groupBy("{$requestedModel->getTable()}.{$requestedModel->getKeyName()}")
+                ->orderByRaw("{$aggregation}({$qualifedProperty}) {$order}");
+        }
+    }
+
+    private function hasFilterClass(?AbstractCondition $filter, $filterClass)
+    {
+        if ($filter) {
+            $stack = [$filter];
+            while (! empty($stack)) {
+                $element = array_pop($stack);
+                if ($element instanceof $filterClass) {
+                    return true;
                 }
-            })
-            ->groupBy($requestedModel->getTable().'.'.$requestedModel->getKeyName())
-            ->orderByRaw("MAX({$relation->getRelated()->getTable()}.{$sortProperty}) {$relationshipSort['order']->value}");
+                if ($element instanceof Group) {
+                    array_push($stack, $element->getConditions());
+                }
+            }
+        }
+
+        return false;
     }
 }

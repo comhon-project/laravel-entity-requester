@@ -102,6 +102,12 @@
             "model": "post"
         },
         {
+            "id": "publicPosts",
+            "type": "relationship",
+            "relationship_type": "has_many",
+            "model": "post"
+        },
+        {
             "id": "friends",
             "type": "relationship",
             "relationship_type": "belongs_to_many",
@@ -112,6 +118,12 @@
             "type": "relationship",
             "relationship_type": "morph_many",
             "model": "purchase"
+        },
+        {
+            "id": "childrenPosts",
+            "type": "relationship",
+            "relationship_type": "has_many_through",
+            "model": "post"
         }
     ],
     "unique_identifier": "id",
@@ -135,8 +147,10 @@
                 "has_consumer_ability",
                 "email_verified_at",
                 "posts",
+                "publicPosts",
                 "friends",
-                "purchases"
+                "purchases",
+                "childrenPosts"
             ],
             "scopes": [
                 {
@@ -243,8 +257,10 @@
             "has_consumer_ability",
             "email_verified_at",
             "posts",
+            "publicPosts",
             "friends",
-            "purchases"
+            "purchases",
+            "childrenPosts"
         ]
     }
 }

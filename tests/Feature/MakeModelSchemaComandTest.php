@@ -226,6 +226,12 @@ class MakeModelSchemaComandTest extends TestCase
                         "relationship_type": "morph_to",
                         "morph_type": "buyer_type",
                         "foreign_key": "buyer_id"
+                    },
+                    {
+                        "id": "tags",
+                        "type": "relationship",
+                        "relationship_type": "morph_to_many",
+                        "model": "tag"
                     }
                 ],
                 "unique_identifier": "id",
@@ -233,7 +239,12 @@ class MakeModelSchemaComandTest extends TestCase
                 "request": {
                     "filtrable": {
                         "properties": [],
-                        "scopes": []
+                        "scopes": [
+                            {
+                                "id": "expensive",
+                                "parameters": []
+                            }
+                        ]
                     },
                     "sortable": []
                 }
@@ -285,9 +296,11 @@ class MakeModelSchemaComandTest extends TestCase
                     'favorite_fruits',
                     'has_consumer_ability',
                     'email_verified_at',
+                    'parent_id',
                     'posts',
                     'friends',
                     'purchases',
+                    'childrenPosts',
                 ],
             ],
             [
@@ -309,6 +322,7 @@ class MakeModelSchemaComandTest extends TestCase
                     'favorite_fruits',
                     'has_consumer_ability',
                     'email_verified_at',
+                    'parent_id',
                 ],
             ],
             [
@@ -364,6 +378,7 @@ class MakeModelSchemaComandTest extends TestCase
                     'favorite_fruits',
                     'has_consumer_ability',
                     'email_verified_at',
+                    'parent_id',
                 ],
             ],
             [

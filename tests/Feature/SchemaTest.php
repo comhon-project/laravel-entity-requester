@@ -12,7 +12,7 @@ class SchemaTest extends TestCase
         $schema = app(SchemaFactoryInterface::class)->get('user');
 
         $this->assertEquals('user', $schema->getId());
-        $this->assertCount(19, $schema->getProperties());
+        $this->assertCount(21, $schema->getProperties());
 
         $property = ['id' => 'name', 'type' => 'string', 'nullable' => false];
         $this->assertEquals($property, $schema->getProperty('name'));

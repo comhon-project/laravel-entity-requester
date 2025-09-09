@@ -28,15 +28,26 @@
             "relationship_type": "morph_to",
             "morph_type": "buyer_type",
             "foreign_key": "buyer_id"
+        },
+        {
+            "id": "tags",
+            "type": "relationship",
+            "relationship_type": "morph_to_many",
+            "model": "tag"
         }
     ],
     "unique_identifier": "id",
     "primary_identifiers": null,
     "request": {
         "filtrable": {
-            "properties": [],
-            "scopes": []
+            "properties": ["buyer", "tags", "amount"],
+            "scopes": [
+                {
+                    "id": "expensive",
+                    "parameters": []
+                }
+            ]
         },
-        "sortable": ["buyer", "amount"]
+        "sortable": ["buyer", "tags", "amount"]
     }
 }

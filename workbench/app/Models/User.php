@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Casts\AsStringable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -20,6 +21,8 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
+
+    public $timestamps = false;
 
     public $filtrable = [
         'id',
@@ -56,6 +59,12 @@ class User extends Authenticatable
         return $this->hasMany(Post::class, 'owner_id');
     }
 
+    #[\Deprecated]
+    public function publicPosts(): HasMany
+    {
+        return $this->hasMany(Post::class, 'owner_id')->withAttributes(['name' => 'public']);
+    }
+
     public function friends(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'friendships', 'from_id', 'to_id');
@@ -72,9 +81,14 @@ class User extends Authenticatable
         return $this->morphMany(Purchase::class, 'buyer');
     }
 
+    public function childrenPosts(): HasManyThrough
+    {
+        return $this->hasManyThrough(Post::class, User::class, 'parent_id', 'owner_id');
+    }
+
     public function scopeValidated($query)
     {
-        $query->where('validated', true);
+        $query->where('name', 'validated');
     }
 
     #[Scope]
@@ -85,17 +99,17 @@ class User extends Authenticatable
 
     public function scopeBool($query, bool $bool)
     {
-        $query->where('bool', $bool);
+        $query->where('has_consumer_ability', $bool);
     }
 
     public function scopeCarbon($query, ?Carbon $dateTime = null)
     {
-        $query->where('datetime', $dateTime);
+        $query->where('email_verified_at', $dateTime);
     }
 
     public function scopeDateTime($query, DateTime $dateTime)
     {
-        $query->where('datetime', $dateTime);
+        $query->where('email_verified_at', $dateTime);
     }
 
     public function scopeFoo(Builder $query, string $foo, float $bar, Fruit $fruit)

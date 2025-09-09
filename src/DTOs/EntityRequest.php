@@ -2,6 +2,7 @@
 
 namespace Comhon\EntityRequester\DTOs;
 
+use Comhon\EntityRequester\Enums\AggregationFunction;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\ConditionType;
 use Comhon\EntityRequester\Enums\GroupOperator;
@@ -96,8 +97,14 @@ class EntityRequest
         string $property,
         OrderDirection $order = OrderDirection::Asc,
         ?AbstractCondition $filter = null,
+        ?AggregationFunction $aggregation = null,
     ) {
-        $this->sort[] = ['property' => $property, 'order' => $order, 'filter' => $filter];
+        $this->sort[] = [
+            'property' => $property,
+            'order' => $order,
+            'filter' => $filter,
+            'aggregation' => $aggregation,
+        ];
     }
 
     /**
@@ -248,12 +255,12 @@ class EntityRequest
             throw new MalformedValueException('sort', 'array');
         }
         $imported = [];
-        foreach ($sort as $key => $sort) {
-            if (! is_array($sort)) {
+        foreach ($sort as $key => $sortElement) {
+            if (! is_array($sortElement)) {
                 throw new MalformedValueException($this->getStack($key, $stack), 'array');
             }
             $stack[] = $key;
-            $imported[] = $this->importSortElement($sort, $stack);
+            $imported[] = $this->importSortElement($sortElement, $stack);
             array_pop($stack);
         }
 
@@ -289,6 +296,16 @@ class EntityRequest
             }
             $stack[] = 'filter';
             $builtSort['filter'] = $this->importFilter($sort['filter'], $stack);
+        }
+        if (isset($sort['aggregation'])) {
+            if (! is_string($sort['aggregation'])) {
+                throw new MalformedValueException($this->getStack('aggregation', $stack), 'string');
+            }
+            $aggregation = AggregationFunction::tryFrom(strtoupper($sort['aggregation']));
+            if (! $aggregation) {
+                throw new EnumValueException($this->getStack('aggregation', $stack), AggregationFunction::class);
+            }
+            $builtSort['aggregation'] = $aggregation;
         }
 
         return $builtSort;

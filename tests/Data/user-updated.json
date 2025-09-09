@@ -96,6 +96,11 @@
             "nullable": true
         },
         {
+            "id": "parent_id",
+            "type": "integer",
+            "nullable": true
+        },
+        {
             "id": "locked_property",
             "type": "float"
         },
@@ -116,6 +121,12 @@
             "type": "relationship",
             "relationship_type": "morph_many",
             "model": "purchase"
+        },
+        {
+            "id": "childrenPosts",
+            "type": "relationship",
+            "relationship_type": "has_many_through",
+            "model": "post"
         }
     ],
     "unique_identifier": "id",
@@ -138,9 +149,11 @@
                 "has_consumer_ability",
                 "email_verified_at",
                 "locked_property",
+                "parent_id",
                 "posts",
                 "friends",
                 "purchases",
+                "childrenPosts",
                 "property_doesnt_exist"
             ],
             "scopes": [
@@ -259,6 +272,7 @@
             "favorite_fruits",
             "has_consumer_ability",
             "email_verified_at",
+            "parent_id",
             "locked_property",
             "property_doesnt_exist"
         ]
