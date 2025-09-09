@@ -316,6 +316,14 @@ class EntityRequestTest extends TestCase
                 ['sort' => [['property' => 'foo', 'filter' => []]]],
                 "Property 'sort.0.filter.type' is required",
             ],
+            [
+                ['sort' => [['property' => 'friends.id', 'aggregation' => ['foo']]]],
+                "Invalid property 'sort.0.aggregation', must be a string",
+            ],
+            [
+                ['sort' => [['property' => 'friends.id', 'aggregation' => 'foo']]],
+                "Invalid property 'sort.0.aggregation', must be one of [COUNT, SUM, AVG, MIN, MAX]",
+            ],
         ];
     }
 
@@ -415,8 +423,8 @@ class EntityRequestTest extends TestCase
         $entityRequest->addSort('bar', OrderDirection::Desc);
 
         $this->assertEquals([
-            ['property' => 'foo', 'order' => OrderDirection::Asc, 'filter' => null],
-            ['property' => 'bar', 'order' => OrderDirection::Desc, 'filter' => null],
+            ['property' => 'foo', 'order' => OrderDirection::Asc, 'filter' => null, 'aggregation' => null],
+            ['property' => 'bar', 'order' => OrderDirection::Desc, 'filter' => null, 'aggregation' => null],
         ], $entityRequest->getSort());
     }
 }

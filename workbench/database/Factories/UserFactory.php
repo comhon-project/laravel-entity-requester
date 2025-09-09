@@ -1,6 +1,6 @@
 <?php
 
-namespace Comhon\EntityRequester\Database\Factories;
+namespace Database\Factories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -25,9 +25,10 @@ class UserFactory extends Factory
     public function definition()
     {
         return [
-            'name' => str_replace("'", '', fake()->lastName()),
-            'first_name' => str_replace("'", '', fake()->firstName()),
+            'name' => $this->faker->lastName,
+            'first_name' => $this->faker->firstName,
             'email' => $this->faker->unique()->safeEmail,
+            'password' => bcrypt('1'),
         ];
     }
 }

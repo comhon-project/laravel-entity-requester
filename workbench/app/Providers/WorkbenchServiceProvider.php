@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Post;
 use App\Models\Purchase;
+use App\Models\Tag;
 use App\Models\User;
 use App\Resolver\ModelResolver;
 use App\Visible;
@@ -25,7 +26,8 @@ class WorkbenchServiceProvider extends ServiceProvider
                 ->bind('user', User::class)
                 ->bind('post', Post::class)
                 ->bind('visible', Visible::class)
-                ->bind('purchase', Purchase::class);
+                ->bind('purchase', Purchase::class)
+                ->bind('tag', Tag::class);
         });
     }
 
@@ -52,6 +54,7 @@ class WorkbenchServiceProvider extends ServiceProvider
             'post' => Post::class,
             'visible' => Visible::class,
             'purchase' => Purchase::class,
+            'tag' => Tag::class,
         ]);
     }
 }

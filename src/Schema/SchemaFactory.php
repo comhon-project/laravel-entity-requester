@@ -15,17 +15,22 @@ use Illuminate\Support\Facades\Cache;
 
 class SchemaFactory implements CacheableInterface, ResponsableInterface, SchemaFactoryInterface
 {
+    private array $schemas = [];
+
     public function get(string $id): Schema
     {
-        $loader = function () use ($id) {
-            $schema = json_decode($this->getJson($id), true);
+        if (! isset($this->schemas[$id])) {
+            $loader = function () use ($id) {
+                $schema = json_decode($this->getJson($id), true);
 
-            return new Schema($schema);
-        };
+                return new Schema($schema);
+            };
+            $this->schemas[$id] = EntityRequester::useCache()
+                ? $this->getCache()->rememberForever('entity-requester::schema-object::'.$id, $loader)
+                : $loader();
+        }
 
-        return EntityRequester::useCache()
-            ? $this->getCache()->rememberForever('entity-requester::schema-object::'.$id, $loader)
-            : $loader();
+        return $this->schemas[$id];
     }
 
     public function getJson(string $id): string

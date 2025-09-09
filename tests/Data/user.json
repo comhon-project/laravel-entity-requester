@@ -96,6 +96,11 @@
             "nullable": true
         },
         {
+            "id": "parent_id",
+            "type": "integer",
+            "nullable": true
+        },
+        {
             "id": "posts",
             "type": "relationship",
             "relationship_type": "has_many",
@@ -112,6 +117,12 @@
             "type": "relationship",
             "relationship_type": "morph_many",
             "model": "purchase"
+        },
+        {
+            "id": "childrenPosts",
+            "type": "relationship",
+            "relationship_type": "has_many_through",
+            "model": "post"
         }
     ],
     "unique_identifier": "id",
