@@ -21,7 +21,7 @@ class RelationJoiner
         ?string $parentAlias = null,
         ?string $morphToTarget = null
     ): string {
-        return self::joinRelation($query, $relation, $parentAlias, $morphToTarget, 'left');
+        return self::joinRelation($query, $relation, 'left', $parentAlias, $morphToTarget);
     }
 
     public static function innerJoinRelation(
@@ -30,15 +30,15 @@ class RelationJoiner
         ?string $parentAlias = null,
         ?string $morphToTarget = null
     ): string {
-        return self::joinRelation($query, $relation, $parentAlias, $morphToTarget, 'inner');
+        return self::joinRelation($query, $relation, 'inner', $parentAlias, $morphToTarget);
     }
 
     public static function joinRelation(
         Builder $query,
         Relation $relation,
+        string $joinType = 'inner',
         ?string $parentAlias = null,
         ?string $morphToTarget = null,
-        string $joinType = 'inner',
     ): string {
         return match (true) {
             $relation instanceof HasOneOrMany => self::joinHasOneOrMany($query, $relation, $parentAlias, $joinType),

@@ -18,4 +18,9 @@ class Tag extends Model
     {
         return $this->morphedByMany(Purchase::class, 'taggable');
     }
+
+    public function scopeValidated($query)
+    {
+        $query->where('name', 'validated');
+    }
 }

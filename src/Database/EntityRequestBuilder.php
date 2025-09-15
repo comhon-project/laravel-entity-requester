@@ -12,7 +12,6 @@ use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Enums\RelationshipConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
-use Comhon\EntityRequester\Exceptions\InvalidSortPropertyException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
@@ -264,100 +263,51 @@ class EntityRequestBuilder
 
     private function addRelationshipSort(Builder $query, array $relationshipSort)
     {
-        $schema = $this->schemaFactory->get(get_class($query->getModel()));
         $explodedProperty = explode('.', $relationshipSort['property']);
-        if (count($explodedProperty) != 2) {
-            throw new InvalidSortPropertyException($relationshipSort['property']);
-        }
-        $relationName = $explodedProperty[0];
-        $sortProperty = $explodedProperty[1];
+        $parentModel = $query->getModel();
+        $joinType = 'left';
+        $aliasLeft = null;
+        $relation = null;
+        $filter = $relationshipSort['filter'] ?? null;
 
-        if (! $schema->isSortable($relationName)) {
-            throw new NotSortableException($relationName);
-        }
-        $relation = $query->getRelation($relationName);
-        if ($relation instanceof MorphTo) {
-            throw new \Exception('MorphTo relations not managed for sorting');
+        for ($i = 0; $i < count($explodedProperty) - 1; $i++) {
+            $relationName = $explodedProperty[$i];
+            $isLastModel = $i == count($explodedProperty) - 2;
+            $currentFilter = $isLastModel ? $filter : null;
+
+            $parentSchema = $this->schemaFactory->get(get_class($parentModel));
+            if (! $parentSchema->isSortable($relationName)) {
+                throw new NotSortableException($relationName);
+            }
+            $relation = $parentModel->query()->getRelation($relationName);
+            if ($relation instanceof MorphTo) {
+                throw new \Exception('MorphTo relations not managed for sorting');
+            }
+
+            // We don’t have control over scopes and relations with conditions,
+            // especially when it comes to table aliases and qualified columns.
+            // To avoid SQL errors, we use subqueries to isolate conditions
+            // that won’t be affected by the rest of the query.
+            $needSubquery = ($currentFilter && $this->hasFilterClass($currentFilter, Scope::class))
+                || count($relation->getQuery()->getQuery()->wheres) > 0;
+
+            $aliasRight = $needSubquery
+                ? $this->addJoinSub($query, $relation, $joinType, $aliasLeft, $currentFilter)
+                : $this->addJoin($query, $relation, $joinType, $aliasLeft, $currentFilter);
+
+            $parentModel = $relation->getRelated();
+            $joinType = 'inner';
+            $aliasLeft = $aliasRight;
         }
 
-        $requestedModel = $query->getModel();
-        $sortModelClass = get_class($relation->getRelated());
-        $foreignSchema = $this->schemaFactory->get($sortModelClass);
+        $lastSortModel = $relation->getRelated();
+        $foreignSchema = $this->schemaFactory->get(get_class($lastSortModel));
+        $sortProperty = $explodedProperty[array_key_last($explodedProperty)];
         if (! $foreignSchema->isSortable($sortProperty)) {
             throw new NotSortableException($sortProperty);
         }
 
-        $filter = $relationshipSort['filter'] ?? null;
-
-        $joinType = 'left';
-        $aliasLeft = null;
-        $aliasRight = null;
-
-        // We don’t have control over scopes and relations with conditions,
-        // especially when it comes to table aliases and qualified columns.
-        // To avoid SQL errors, we use subqueries to isolate conditions
-        // that won’t be affected by the rest of the query.
-        $needSubquery = $this->hasFilterClass($filter, Scope::class)
-            || count($relation->getQuery()->getQuery()->wheres) > 0;
-
-        if ($needSubquery) {
-            $eloquentSubQuery = $relation->getQuery();
-            if ($relation instanceof MorphToMany) {
-                $morphColumn = $relation->getTable().'.'.$relation->getMorphType();
-                $joins = $eloquentSubQuery->getQuery()->joins;
-                $join = $joins[array_key_last($joins)];
-                $join->where($morphColumn, $relation->getMorphClass());
-                $eloquentSubQuery->getQuery()->addBinding($join->getBindings(), 'join');
-            } elseif ($relation instanceof MorphOneOrMany) {
-                $morphColumn = $relation->getRelated()->getTable().'.'.$relation->getMorphType();
-                $eloquentSubQuery->where($morphColumn, $relation->getMorphClass());
-            }
-            if ($filter) {
-                $this->addFilter($foreignSchema, $eloquentSubQuery, $filter, true);
-            }
-
-            $aliasRight = Utils::generateAlias("sub_{$relation->getRelated()->getTable()}");
-            [$leftOn, $rightOnSub] = RelationJoiner::getjoinColumns($relation, $aliasLeft);
-
-            if ($relation instanceof BelongsToMany || $relation instanceof HasOneOrManyThrough) {
-                $aliasColumn = Utils::generateAlias(explode('.', $rightOnSub)[1]);
-                $eloquentSubQuery->select(
-                    $relation->getRelated()->getTable().'.*',
-                    "$rightOnSub as $aliasColumn",
-                );
-                $rightOn = Utils::qualify($aliasColumn, $aliasRight);
-            } else {
-                $rightOn = Utils::qualify($rightOnSub, $aliasRight);
-            }
-
-            $query->joinSub(
-                $eloquentSubQuery,
-                $aliasRight,
-                function ($join) use ($leftOn, $rightOn) {
-                    $join->on($leftOn, $rightOn);
-                },
-                type: $joinType,
-            );
-        } else {
-            $aliasRight = RelationJoiner::joinRelation($query, $relation, $aliasLeft, null, $joinType);
-
-            if ($filter) {
-                $originalQueryModel = $query->getModel();
-                $relatedModel = $relation->getRelated();
-                $query->setModel($relatedModel);
-                if ($this->hasFilterClass($filter, RelationshipCondition::class)) {
-                    $this->addFilter($foreignSchema, $query, $filter, true, $aliasRight)
-                        ->orWhereNull("{$aliasRight}.{$relatedModel->getKeyName()}");
-                } else {
-                    $joins = $query->getQuery()->joins;
-                    $join = $joins[array_key_last($joins)];
-                    $this->addFilter($foreignSchema, $join, $filter, true);
-                    $query->getQuery()->addBinding($join->getBindings(), 'where');
-                }
-                $query->setModel($originalQueryModel);
-            }
-        }
-
+        $requestedModel = $query->getModel();
         $query->select($requestedModel->getTable().'.*');
 
         $qualifedProperty = "{$aliasRight}.{$sortProperty}";
@@ -378,6 +328,87 @@ class EntityRequestBuilder
             $query->groupBy("{$requestedModel->getTable()}.{$requestedModel->getKeyName()}")
                 ->orderByRaw("{$aggregation}({$qualifedProperty}) {$order}");
         }
+    }
+
+    private function addJoinSub(
+        Builder $query,
+        $relation,
+        string $joinType = 'inner',
+        ?string $aliasLeft = null,
+        ?AbstractCondition $filter = null,
+    ): string {
+        $eloquentSubQuery = $relation->getQuery();
+        if ($relation instanceof MorphToMany) {
+            $morphColumn = $relation->getTable().'.'.$relation->getMorphType();
+            $joins = $eloquentSubQuery->getQuery()->joins;
+            $join = $joins[array_key_last($joins)];
+            $join->where($morphColumn, $relation->getMorphClass());
+            $eloquentSubQuery->getQuery()->addBinding($join->getBindings(), 'join');
+        } elseif ($relation instanceof MorphOneOrMany) {
+            $morphColumn = $relation->getRelated()->getTable().'.'.$relation->getMorphType();
+            $eloquentSubQuery->where($morphColumn, $relation->getMorphClass());
+        }
+
+        $aliasRight = Utils::generateAlias("sub_{$relation->getRelated()->getTable()}");
+        [$leftOn, $rightOnSub] = RelationJoiner::getjoinColumns($relation, $aliasLeft);
+
+        if ($relation instanceof BelongsToMany || $relation instanceof HasOneOrManyThrough) {
+            $aliasColumn = Utils::generateAlias(explode('.', $rightOnSub)[1]);
+            $eloquentSubQuery->select(
+                $relation->getRelated()->getTable().'.*',
+                "$rightOnSub as $aliasColumn",
+            );
+            $rightOn = Utils::qualify($aliasColumn, $aliasRight);
+        } else {
+            $rightOn = Utils::qualify($rightOnSub, $aliasRight);
+        }
+
+        // the filter must be set on the subquery before doing the join
+        // otherwise it is not taken in account
+        if ($filter) {
+            $foreignSchema = $this->schemaFactory->get(get_class($relation->getRelated()));
+            $this->addFilter($foreignSchema, $eloquentSubQuery, $filter);
+        }
+
+        $query->joinSub(
+            $eloquentSubQuery,
+            $aliasRight,
+            function ($join) use ($leftOn, $rightOn) {
+                $join->on($leftOn, $rightOn);
+            },
+            type: $joinType,
+        );
+
+        return $aliasRight;
+    }
+
+    private function addJoin(
+        Builder $query,
+        $relation,
+        string $joinType = 'inner',
+        ?string $aliasLeft = null,
+        ?AbstractCondition $filter = null,
+    ): string {
+        $aliasRight = RelationJoiner::joinRelation($query, $relation, $joinType, $aliasLeft);
+
+        if ($filter) {
+            $relatedModel = $relation->getRelated();
+            $foreignSchema = $this->schemaFactory->get(get_class($relatedModel));
+            $originalQueryModel = $query->getModel();
+            $query->setModel($relatedModel);
+            if ($this->hasFilterClass($filter, RelationshipCondition::class)) {
+                $this->addFilter($foreignSchema, $query, $filter, true, $aliasRight)
+                    ->orWhereNull("{$aliasRight}.{$relatedModel->getKeyName()}");
+            } else {
+                $joins = $query->getQuery()->joins;
+                $join = $joins[array_key_last($joins)];
+                $this->addFilter($foreignSchema, $join, $filter, true);
+                $query->getQuery()->addBinding($join->getBindings(), 'where');
+            }
+            $query->setModel($originalQueryModel);
+        }
+
+        return $aliasRight;
     }
 
     private function hasFilterClass(?AbstractCondition $filter, $filterClass)

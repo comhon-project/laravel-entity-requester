@@ -30,7 +30,12 @@
     "request": {
         "filtrable": {
             "properties": ["name"],
-            "scopes": []
+            "scopes": [
+                {
+                    "id": "validated",
+                    "parameters": []
+                }
+            ]
         },
         "sortable": ["id", "name", "posts", "purchases"]
     }

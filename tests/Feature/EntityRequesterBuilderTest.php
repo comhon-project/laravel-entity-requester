@@ -11,7 +11,6 @@ use Comhon\EntityRequester\DTOs\Condition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
-use Comhon\EntityRequester\Exceptions\InvalidSortPropertyException;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
@@ -163,20 +162,6 @@ class EntityRequesterBuilderTest extends TestCase
         EntityRequestBuilder::fromEntityRequest($entityRequest);
     }
 
-    public function test_build_entity_request_invalid_relationship_sort_property()
-    {
-        $this->expectException(InvalidSortPropertyException::class);
-        $this->expectExceptionMessage("Invalid sort property 'posts.foo.bar'");
-        $query = EntityRequestBuilder::fromInputs([
-            'model' => 'user',
-            'sort' => [
-                [
-                    'property' => 'posts.foo.bar',
-                ],
-            ],
-        ]);
-    }
-
     public function test_build_entity_request_relationship_sort_not_sortable_relation()
     {
         $this->expectException(NotSortableException::class);
@@ -272,7 +257,18 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join "posts" as "alias_posts_1" on "users"."id" = "alias_posts_1"."owner_id" and ("alias_posts_1"."name" = \'public\') where ("users"."email" = \'john.doe@gmail.com\' and ("comment" = \'foo-123.321-apple\') and (exists (select * from "posts" where "users"."id" = "posts"."owner_id") or not exists (select * from "users" as "laravel_reserved_0" inner join "friendships" on "laravel_reserved_0"."id" = "friendships"."to_id" where "users"."id" = "friendships"."from_id" and "laravel_reserved_0"."first_name" = \'john\'))) group by "users"."id" order by MAX("alias_posts_1"."name") DESC, "birth_date" asc');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join "posts" as "alias_posts_1" on "users"."id" = "alias_posts_1"."owner_id" '.
+            'and ("alias_posts_1"."name" = \'public\') '.
+            'where ("users"."email" = \'john.doe@gmail.com\' '.
+            'and ("comment" = \'foo-123.321-apple\') '.
+            'and (exists (select * from "posts" where "users"."id" = "posts"."owner_id") '.
+            'or not exists (select * from "users" as "laravel_reserved_0" '.
+            'inner join "friendships" on "laravel_reserved_0"."id" = "friendships"."to_id" '.
+            'where "users"."id" = "friendships"."from_id" and "laravel_reserved_0"."first_name" = \'john\'))) '.
+            'group by "users"."id" order by MAX("alias_posts_1"."name") DESC, "birth_date" asc'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -365,7 +361,21 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver("select * from \"users\" where (\"users\".\"email\" = 'john.doe@gmail.com' $operator \"users\".\"email\" <> 'john.doe@gmail.com' $operator \"users\".\"age\" > 32 $operator \"users\".\"age\" >= 32 $operator \"users\".\"age\" < 32 $operator \"users\".\"age\" <= 32 $operator \"users\".\"email\" LIKE '%@gmail.com' $operator \"users\".\"email\" NOT LIKE '%@gmail.com' $operator \"users\".\"age\" in (10, 20) $operator \"users\".\"age\" not in (30, 40) $operator (\"users\".\"age\" = 25)) order by \"name\" asc, \"first_name\" asc");
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "users" where ('.
+            "\"users\".\"email\" = 'john.doe@gmail.com' $operator ".
+            "\"users\".\"email\" <> 'john.doe@gmail.com' $operator ".
+            "\"users\".\"age\" > 32 $operator ".
+            "\"users\".\"age\" >= 32 $operator ".
+            "\"users\".\"age\" < 32 $operator ".
+            "\"users\".\"age\" <= 32 $operator ".
+            "\"users\".\"email\" LIKE '%@gmail.com' $operator ".
+            "\"users\".\"email\" NOT LIKE '%@gmail.com' $operator ".
+            "\"users\".\"age\" in (10, 20) $operator ".
+            "\"users\".\"age\" not in (30, 40) $operator ".
+            '("users"."age" = 25)'.
+            ') order by "name" asc, "first_name" asc'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -395,7 +405,11 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select * from "users" where (("age" = 25)) order by "name" asc, "first_name" asc');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "users" '.
+            'where (("age" = 25)) '.
+            'order by "name" asc, "first_name" asc'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -421,7 +435,14 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select * from "purchases" where (("purchases"."buyer_type" = \'user\' and exists (select * from "users" where "purchases"."buyer_id" = "users"."id" and "users"."first_name" = \'john\'))) order by "id" asc');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "purchases" '.
+            'where (("purchases"."buyer_type" = \'user\' '.
+            'and exists (select * from "users" '.
+            'where "purchases"."buyer_id" = "users"."id" '.
+            'and "users"."first_name" = \'john\'))) '.
+            'order by "id" asc'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -451,7 +472,22 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join "purchases" as "alias_purchases_1" on "users"."id" = "alias_purchases_1"."buyer_id" and "alias_purchases_1"."buyer_type" = \'user\' where exists (select * from "tags" inner join "taggables" on "tags"."id" = "taggables"."tag_id" where "alias_purchases_1"."id" = "taggables"."taggable_id" and "taggables"."taggable_type" = \'purchase\' and "tags"."name" = \'foo\') or "alias_purchases_1"."id" is null group by "users"."id" order by COUNT("alias_purchases_1"."amount") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join "purchases" as "alias_purchases_1" '.
+            'on "users"."id" = "alias_purchases_1"."buyer_id" '.
+            'and "alias_purchases_1"."buyer_type" = \'user\' '.
+            'where exists ('.
+                'select * from "tags" '.
+                'inner join "taggables" on "tags"."id" = "taggables"."tag_id" '.
+                'where "alias_purchases_1"."id" = "taggables"."taggable_id" '.
+                'and "taggables"."taggable_type" = \'purchase\' '.
+                'and "tags"."name" = \'foo\''.
+            ') '.
+            'or "alias_purchases_1"."id" is null '.
+            'group by "users"."id" '.
+            'order by COUNT("alias_purchases_1"."amount") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -469,7 +505,12 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "posts".* from "posts" left join "users" as "alias_users_1" on "posts"."owner_id" = "alias_users_1"."id" order by "alias_users_1"."email" asc');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "posts".* from "posts" '.
+            'left join "users" as "alias_users_1" '.
+            'on "posts"."owner_id" = "alias_users_1"."id" '.
+            'order by "alias_users_1"."email" asc'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -491,7 +532,12 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "posts".* from "posts" left join (select * from "users" where ("name" = \'validated\')) as "alias_sub_users_1" on "posts"."owner_id" = "alias_sub_users_1"."id" order by "alias_sub_users_1"."email" asc');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "posts".* from "posts" '.
+            'left join (select * from "users" where ("name" = \'validated\')) as "alias_sub_users_1" '.
+            'on "posts"."owner_id" = "alias_sub_users_1"."id" '.
+            'order by "alias_sub_users_1"."email" asc'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -510,7 +556,13 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join "posts" as "alias_posts_1" on "users"."id" = "alias_posts_1"."owner_id" group by "users"."id" order by COUNT("alias_posts_1"."name") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join "posts" as "alias_posts_1" '.
+            'on "users"."id" = "alias_posts_1"."owner_id" '.
+            'group by "users"."id" '.
+            'order by COUNT("alias_posts_1"."name") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -529,7 +581,13 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join (select * from "posts" where "posts"."name" = \'public\') as "alias_sub_posts_1" on "users"."id" = "alias_sub_posts_1"."owner_id" group by "users"."id" order by COUNT("alias_sub_posts_1"."name") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join (select * from "posts" where "posts"."name" = \'public\') as "alias_sub_posts_1" '.
+            'on "users"."id" = "alias_sub_posts_1"."owner_id" '.
+            'group by "users"."id" '.
+            'order by COUNT("alias_sub_posts_1"."name") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -548,7 +606,14 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join "purchases" as "alias_purchases_1" on "users"."id" = "alias_purchases_1"."buyer_id" and "alias_purchases_1"."buyer_type" = \'user\' group by "users"."id" order by SUM("alias_purchases_1"."amount") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join "purchases" as "alias_purchases_1" '.
+            'on "users"."id" = "alias_purchases_1"."buyer_id" '.
+            'and "alias_purchases_1"."buyer_type" = \'user\' '.
+            'group by "users"."id" '.
+            'order by SUM("alias_purchases_1"."amount") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -571,7 +636,14 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join (select * from "purchases" where "purchases"."buyer_type" = \'user\' and ("purchases"."amount" >= 1000)) as "alias_sub_purchases_1" on "users"."id" = "alias_sub_purchases_1"."buyer_id" group by "users"."id" order by SUM("alias_sub_purchases_1"."amount") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join (select * from "purchases" where "purchases"."buyer_type" = \'user\' '.
+            'and ("purchases"."amount" >= 1000)) as "alias_sub_purchases_1" '.
+            'on "users"."id" = "alias_sub_purchases_1"."buyer_id" '.
+            'group by "users"."id" '.
+            'order by SUM("alias_sub_purchases_1"."amount") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -590,7 +662,15 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join "friendships" as "alias_friendships_2" on "users"."id" = "alias_friendships_2"."from_id" inner join "users" as "alias_users_1" on "alias_users_1"."id" = "alias_friendships_2"."to_id" group by "users"."id" order by COUNT("alias_users_1"."id") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join "friendships" as "alias_friendships_2" '.
+            'on "users"."id" = "alias_friendships_2"."from_id" '.
+            'inner join "users" as "alias_users_1" '.
+            'on "alias_users_1"."id" = "alias_friendships_2"."to_id" '.
+            'group by "users"."id" '.
+            'order by COUNT("alias_users_1"."id") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -613,7 +693,15 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join (select "users".*, "friendships"."from_id" as "alias_from_id_2" from "users" inner join "friendships" on "users"."id" = "friendships"."to_id" where ("name" = \'validated\')) as "alias_sub_users_1" on "users"."id" = "alias_sub_users_1"."alias_from_id_2" group by "users"."id" order by COUNT("alias_sub_users_1"."id") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join (select "users".*, "friendships"."from_id" as "alias_from_id_2" '.
+            'from "users" inner join "friendships" on "users"."id" = "friendships"."to_id" '.
+            'where ("name" = \'validated\')) as "alias_sub_users_1" '.
+            'on "users"."id" = "alias_sub_users_1"."alias_from_id_2" '.
+            'group by "users"."id" '.
+            'order by COUNT("alias_sub_users_1"."id") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -632,7 +720,16 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "posts".* from "posts" left join "taggables" as "alias_taggables_2" on "posts"."id" = "alias_taggables_2"."taggable_id" and "alias_taggables_2"."taggable_type" = \'post\' inner join "tags" as "alias_tags_1" on "alias_tags_1"."id" = "alias_taggables_2"."tag_id" group by "posts"."id" order by AVG("alias_tags_1"."id") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "posts".* from "posts" '.
+            'left join "taggables" as "alias_taggables_2" '.
+            'on "posts"."id" = "alias_taggables_2"."taggable_id" '.
+            'and "alias_taggables_2"."taggable_type" = \'post\' '.
+            'inner join "tags" as "alias_tags_1" '.
+            'on "alias_tags_1"."id" = "alias_taggables_2"."tag_id" '.
+            'group by "posts"."id" '.
+            'order by AVG("alias_tags_1"."id") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -651,7 +748,15 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "posts".* from "posts" left join (select "tags".*, "taggables"."taggable_id" as "alias_taggable_id_2" from "tags" inner join "taggables" on "tags"."id" = "taggables"."tag_id" and "taggables"."taggable_type" = \'post\' where "tags"."name" = \'public\') as "alias_sub_tags_1" on "posts"."id" = "alias_sub_tags_1"."alias_taggable_id_2" group by "posts"."id" order by AVG("alias_sub_tags_1"."id") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "posts".* from "posts" '.
+            'left join (select "tags".*, "taggables"."taggable_id" as "alias_taggable_id_2" '.
+            'from "tags" inner join "taggables" on "tags"."id" = "taggables"."tag_id" '.
+            'and "taggables"."taggable_type" = \'post\' where "tags"."name" = \'public\') as "alias_sub_tags_1" '.
+            'on "posts"."id" = "alias_sub_tags_1"."alias_taggable_id_2" '.
+            'group by "posts"."id" '.
+            'order by AVG("alias_sub_tags_1"."id") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -676,7 +781,17 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "tags".* from "tags" left join "taggables" as "alias_taggables_2" on "tags"."id" = "alias_taggables_2"."tag_id" and "alias_taggables_2"."taggable_type" = \'post\' inner join "posts" as "alias_posts_1" on "alias_posts_1"."id" = "alias_taggables_2"."taggable_id" and "alias_posts_1"."name" = \'public\' group by "tags"."id" order by MIN("alias_posts_1"."name") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "tags".* from "tags" '.
+            'left join "taggables" as "alias_taggables_2" '.
+            'on "tags"."id" = "alias_taggables_2"."tag_id" '.
+            'and "alias_taggables_2"."taggable_type" = \'post\' '.
+            'inner join "posts" as "alias_posts_1" '.
+            'on "alias_posts_1"."id" = "alias_taggables_2"."taggable_id" '.
+            'and "alias_posts_1"."name" = \'public\' '.
+            'group by "tags"."id" '.
+            'order by MIN("alias_posts_1"."name") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -699,7 +814,15 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "tags".* from "tags" left join (select "posts".*, "taggables"."tag_id" as "alias_tag_id_2" from "posts" inner join "taggables" on "posts"."id" = "taggables"."taggable_id" and "taggables"."taggable_type" = \'post\' where ("posts"."name" = \'validated\')) as "alias_sub_posts_1" on "tags"."id" = "alias_sub_posts_1"."alias_tag_id_2" group by "tags"."id" order by MIN("alias_sub_posts_1"."name") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "tags".* from "tags" '.
+            'left join (select "posts".*, "taggables"."tag_id" as "alias_tag_id_2" '.
+            'from "posts" inner join "taggables" on "posts"."id" = "taggables"."taggable_id" '.
+            'and "taggables"."taggable_type" = \'post\' where ("posts"."name" = \'validated\')) as "alias_sub_posts_1" '.
+            'on "tags"."id" = "alias_sub_posts_1"."alias_tag_id_2" '.
+            'group by "tags"."id" '.
+            'order by MIN("alias_sub_posts_1"."name") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -724,7 +847,16 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join "users" as "alias_users_1" on "users"."id" = "alias_users_1"."parent_id" inner join "posts" as "alias_posts_2" on "alias_users_1"."id" = "alias_posts_2"."owner_id" and "alias_posts_2"."name" = \'foo\' group by "users"."id" order by COUNT("alias_posts_2"."name") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join "users" as "alias_users_1" '.
+            'on "users"."id" = "alias_users_1"."parent_id" '.
+            'inner join "posts" as "alias_posts_2" '.
+            'on "alias_users_1"."id" = "alias_posts_2"."owner_id" '.
+            'and "alias_posts_2"."name" = \'foo\' '.
+            'group by "users"."id" '.
+            'order by COUNT("alias_posts_2"."name") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -747,7 +879,15 @@ class EntityRequesterBuilderTest extends TestCase
             ],
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select "users".* from "users" left join (select "posts".*, "users"."parent_id" as "alias_parent_id_2" from "posts" inner join "users" on "users"."id" = "posts"."owner_id" where ("posts"."name" = \'validated\')) as "alias_sub_posts_1" on "users"."id" = "alias_sub_posts_1"."alias_parent_id_2" group by "users"."id" order by COUNT("alias_sub_posts_1"."name") ASC');
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join (select "posts".*, "users"."parent_id" as "alias_parent_id_2" '.
+            'from "posts" inner join "users" on "users"."id" = "posts"."owner_id" '.
+            'where ("posts"."name" = \'validated\')) as "alias_sub_posts_1" '.
+            'on "users"."id" = "alias_sub_posts_1"."alias_parent_id_2" '.
+            'group by "users"."id" '.
+            'order by COUNT("alias_sub_posts_1"."name") ASC'
+        );
         $this->assertEquals($rawSql, $query->toRawSql());
 
         // just verify that query works and doesn't throw exception
@@ -778,5 +918,77 @@ class EntityRequesterBuilderTest extends TestCase
                 ],
             ],
         ]);
+    }
+
+    public function test_build_entity_sort_nested_relations_without_subquery()
+    {
+        $query = EntityRequestBuilder::fromInputs([
+            'model' => 'user',
+            'sort' => [
+                [
+                    'property' => 'friends.posts.tags.id',
+                    'aggregation' => 'count',
+                    'filter' => [
+                        'type' => 'condition',
+                        'operator' => '=',
+                        'property' => 'name',
+                        'value' => 'foo',
+                    ],
+                ],
+            ],
+        ]);
+
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join "friendships" as "alias_friendships_2" on "users"."id" = "alias_friendships_2"."from_id" '.
+            'inner join "users" as "alias_users_1" on "alias_users_1"."id" = "alias_friendships_2"."to_id" '.
+            'inner join "posts" as "alias_posts_3" on "alias_users_1"."id" = "alias_posts_3"."owner_id" '.
+            'inner join "taggables" as "alias_taggables_5" on "alias_posts_3"."id" = "alias_taggables_5"."taggable_id" '.
+            'and "alias_taggables_5"."taggable_type" = \'post\' '.
+            'inner join "tags" as "alias_tags_4" on "alias_tags_4"."id" = "alias_taggables_5"."tag_id" '.
+            'and "alias_tags_4"."name" = \'foo\' '.
+            'group by "users"."id" order by COUNT("alias_tags_4"."id") ASC'
+        );
+        $this->assertEquals($rawSql, $query->toRawSql());
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
+    }
+
+    public function test_build_entity_sort_nested_relations_with_subquery()
+    {
+        $query = EntityRequestBuilder::fromInputs([
+            'model' => 'user',
+            'sort' => [
+                [
+                    'property' => 'friends.publicPosts.tags.id',
+                    'aggregation' => 'count',
+                    'filter' => [
+                        'type' => 'scope',
+                        'name' => 'validated',
+                    ],
+                ],
+            ],
+        ]);
+
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select "users".* from "users" '.
+            'left join "friendships" as "alias_friendships_2" '.
+            'on "users"."id" = "alias_friendships_2"."from_id" '.
+            'inner join "users" as "alias_users_1" '.
+            'on "alias_users_1"."id" = "alias_friendships_2"."to_id" '.
+            'inner join (select * from "posts" where "posts"."name" = \'public\') as "alias_sub_posts_3" '.
+            'on "alias_users_1"."id" = "alias_sub_posts_3"."owner_id" '.
+            'inner join (select "tags".*, "taggables"."taggable_id" as "alias_taggable_id_5" '.
+            'from "tags" inner join "taggables" on "tags"."id" = "taggables"."tag_id" '.
+            'and "taggables"."taggable_type" = \'post\' where ("name" = \'validated\')) as "alias_sub_tags_4" '.
+            'on "alias_sub_posts_3"."id" = "alias_sub_tags_4"."alias_taggable_id_5" '.
+            'group by "users"."id" '.
+            'order by COUNT("alias_sub_tags_4"."id") ASC'
+        );
+        $this->assertEquals($rawSql, $query->toRawSql());
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
     }
 }
