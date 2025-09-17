@@ -220,6 +220,13 @@ class EntityRequesterBuilderTest extends TestCase
                             ],
                             [
                                 'type' => 'relationship_condition',
+                                'operator' => 'Has',
+                                'property' => 'posts',
+                                'count_operator' => '<',
+                                'count' => 5,
+                            ],
+                            [
+                                'type' => 'relationship_condition',
                                 'operator' => 'Has_Not',
                                 'property' => 'friends',
                                 'filter' => [
@@ -264,6 +271,7 @@ class EntityRequesterBuilderTest extends TestCase
             'where ("users"."email" = \'john.doe@gmail.com\' '.
             'and ("comment" = \'foo-123.321-apple\') '.
             'and (exists (select * from "posts" where "users"."id" = "posts"."owner_id") '.
+            'or (select count(*) from "posts" where "users"."id" = "posts"."owner_id") < 5 '.
             'or not exists (select * from "users" as "laravel_reserved_0" '.
             'inner join "friendships" on "laravel_reserved_0"."id" = "friendships"."to_id" '.
             'where "users"."id" = "friendships"."from_id" and "laravel_reserved_0"."first_name" = \'john\'))) '.

@@ -187,16 +187,17 @@ class EntityRequestBuilder
         bool $and,
         ?string $table,
     ) {
-        $operator = '>=';
-        $count = 1;
         $propertyId = $condition->getProperty();
         $filter = $condition->getFilter();
+        $isHas = $condition->getOperator() == RelationshipConditionOperator::Has;
+        $countOperator = $condition->getCountOperator()->value;
+        $count = $condition->getCount();
 
         if (! $schema->isFiltrable($propertyId)) {
             throw new NotFiltrableException($propertyId);
         }
 
-        $callWhere = $condition->getOperator() == RelationshipConditionOperator::Has
+        $callWhere = $isHas
             ? ($and ? 'whereHas' : 'orWhereHas')
             : ($and ? 'whereDoesntHave' : 'orWhereDoesntHave');
 
@@ -216,7 +217,9 @@ class EntityRequestBuilder
             }
         : null;
 
-        $query->$callWhere($propertyId, $callback, $operator, $count);
+        $isHas
+            ? $query->$callWhere($propertyId, $callback, $countOperator, $count)
+            : $query->$callWhere($propertyId, $callback);
     }
 
     private function addScope(Schema $schema, Builder $query, Scope $scope, bool $and)

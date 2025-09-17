@@ -208,6 +208,10 @@ class EntityRequestTest extends TestCase
                 "Invalid property 'filter.operator', must be one of [OR, AND]",
             ],
             [
+                ['filter' => ['type' => 'group', 'operator' => ['foo']]],
+                "Invalid property 'filter.operator', must be one of [OR, AND]",
+            ],
+            [
                 ['filter' => ['type' => 'group', 'operator' => 'OR', 'filters' => 'foo']],
                 "Invalid property 'filter.filters', must be a array",
             ],
@@ -237,7 +241,11 @@ class EntityRequestTest extends TestCase
                 "Property 'filter.value' is required",
             ],
             [
-                ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'plop']],
+                ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'foo']],
+                "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, IN, NOT IN, LIKE, NOT LIKE]",
+            ],
+            [
+                ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => ['foo']]],
                 "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, IN, NOT IN, LIKE, NOT LIKE]",
             ],
             [
@@ -277,8 +285,28 @@ class EntityRequestTest extends TestCase
                 "Invalid property 'filter.operator', must be one of [HAS, HAS_NOT]",
             ],
             [
+                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => ['foo']]],
+                "Invalid property 'filter.operator', must be one of [HAS, HAS_NOT]",
+            ],
+            [
                 ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'HAS', 'filter' => 'foo']],
                 "Invalid property 'filter.filter', must be a array",
+            ],
+            [
+                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'HAS', 'count_operator' => 'foo']],
+                "filter.count_operator', must be one of [=, <>, <, <=, >, >=]",
+            ],
+            [
+                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'HAS', 'count_operator' => ['foo']]],
+                "filter.count_operator', must be one of [=, <>, <, <=, >, >=]",
+            ],
+            [
+                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'HAS', 'count' => 'foo']],
+                "Invalid property 'filter.count', must be a integer greater than 0",
+            ],
+            [
+                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'HAS', 'count' => 0]],
+                "Invalid property 'filter.count', must be a integer greater than 0",
             ],
             [
                 ['sort' => 'foo'],
@@ -298,7 +326,7 @@ class EntityRequestTest extends TestCase
             ],
             [
                 ['sort' => [['property' => 'foo', 'order' => 123]]],
-                "Invalid property 'sort.0.order', must be a string",
+                "Invalid property 'sort.0.order', must be one of [ASC, DESC]",
             ],
             [
                 ['sort' => [['property' => 'foo', 'order' => 'foo']]],
@@ -318,7 +346,7 @@ class EntityRequestTest extends TestCase
             ],
             [
                 ['sort' => [['property' => 'friends.id', 'aggregation' => ['foo']]]],
-                "Invalid property 'sort.0.aggregation', must be a string",
+                "Invalid property 'sort.0.aggregation', must be one of [COUNT, SUM, AVG, MIN, MAX]",
             ],
             [
                 ['sort' => [['property' => 'friends.id', 'aggregation' => 'foo']]],
