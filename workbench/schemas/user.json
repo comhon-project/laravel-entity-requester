@@ -128,6 +128,95 @@
     ],
     "unique_identifier": "id",
     "primary_identifiers": ["name", "first_name"],
+    "scopes": [
+        {
+            "id": "validated",
+            "parameters": []
+        },
+        {
+            "id": "age",
+            "parameters": [
+                {
+                    "id": "age",
+                    "name": "age",
+                    "type": "integer",
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "id": "bool",
+            "parameters": [
+                {
+                    "id": "bool",
+                    "name": "bool",
+                    "type": "boolean",
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "id": "carbon",
+            "parameters": [
+                {
+                    "id": "dateTime",
+                    "name": "date time",
+                    "type": "datetime",
+                    "nullable": true
+                }
+            ]
+        },
+        {
+            "id": "dateTime",
+            "parameters": [
+                {
+                    "id": "dateTime",
+                    "name": "date time",
+                    "type": "datetime",
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "id": "foo",
+            "parameters": [
+                {
+                    "id": "foo",
+                    "name": "foo",
+                    "type": "string",
+                    "nullable": false
+                },
+                {
+                    "id": "bar",
+                    "name": "bar",
+                    "type": "float",
+                    "nullable": false
+                },
+                {
+                    "id": "fruit",
+                    "name": "fruit",
+                    "type": "string",
+                    "enum": {
+                        "apple": "apple",
+                        "orange": "orange",
+                        "strawberry": "strawberry"
+                    },
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "id": "resolvable",
+            "parameters": [
+                {
+                    "id": "resolvableParam",
+                    "name": "resolvable param",
+                    "type": "string",
+                    "nullable": false
+                }
+            ]
+        }
+    ],
     "request": {
         "default_sort": [{ "property": "name" }, { "property": "first_name" }],
         "filtrable": {
@@ -153,93 +242,13 @@
                 "childrenPosts"
             ],
             "scopes": [
-                {
-                    "id": "validated",
-                    "parameters": []
-                },
-                {
-                    "id": "age",
-                    "parameters": [
-                        {
-                            "id": "age",
-                            "name": "age",
-                            "type": "integer",
-                            "nullable": false
-                        }
-                    ]
-                },
-                {
-                    "id": "bool",
-                    "parameters": [
-                        {
-                            "id": "bool",
-                            "name": "bool",
-                            "type": "boolean",
-                            "nullable": false
-                        }
-                    ]
-                },
-                {
-                    "id": "carbon",
-                    "parameters": [
-                        {
-                            "id": "dateTime",
-                            "name": "date time",
-                            "type": "datetime",
-                            "nullable": true
-                        }
-                    ]
-                },
-                {
-                    "id": "dateTime",
-                    "parameters": [
-                        {
-                            "id": "dateTime",
-                            "name": "date time",
-                            "type": "datetime",
-                            "nullable": false
-                        }
-                    ]
-                },
-                {
-                    "id": "foo",
-                    "parameters": [
-                        {
-                            "id": "foo",
-                            "name": "foo",
-                            "type": "string",
-                            "nullable": false
-                        },
-                        {
-                            "id": "bar",
-                            "name": "bar",
-                            "type": "float",
-                            "nullable": false
-                        },
-                        {
-                            "id": "fruit",
-                            "name": "fruit",
-                            "type": "string",
-                            "enum": {
-                                "apple": "apple",
-                                "orange": "orange",
-                                "strawberry": "strawberry"
-                            },
-                            "nullable": false
-                        }
-                    ]
-                },
-                {
-                    "id": "resolvable",
-                    "parameters": [
-                        {
-                            "id": "resolvableParam",
-                            "name": "resolvable param",
-                            "type": "string",
-                            "nullable": false
-                        }
-                    ]
-                }
+                "validated",
+                "age",
+                "bool",
+                "carbon",
+                "dateTime",
+                "foo",
+                "resolvable"
             ]
         },
         "sortable": [

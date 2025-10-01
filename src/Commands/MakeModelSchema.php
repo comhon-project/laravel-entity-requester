@@ -37,6 +37,7 @@ class MakeModelSchema extends Command
     protected $signature = 'entity-requester:make-model-schema
                             {model}
                             {--filtrable= : properties that should be filtrable (all, attributes, none, model) }
+                            {--scopable= : scopes that should be filtrable (all, none, model) }
                             {--sortable= : properties that should be sortable (attributes, none, model) }
                             {--pretty : serialize json with whitespace and line breaks }
                             {--fresh : only for existing schemas. if specified, overwrite existing schema with a fresh one, otherwise only apply needed updates}';
@@ -99,18 +100,20 @@ class MakeModelSchema extends Command
             throw new \Exception("model $modelInput not found");
         }
 
-        $allowedValues = ['none', 'attributes', 'model', 'all'];
-        $filtrable = $this->getRequestOption('filtrable', $allowedValues);
+        $allowedPropOptions = ['none', 'attributes', 'all', 'model'];
+        $filtrable = $this->getRequestOption('filtrable', $allowedPropOptions);
 
-        $allowedValues = ['none', 'attributes', 'model'];
-        $sortable = $this->getRequestOption('sortable', $allowedValues);
+        $allowedScopeOptions = ['none', 'all', 'model'];
+        $scopable = $this->getRequestOption('scopable', $allowedScopeOptions);
+
+        $sortable = $this->getRequestOption('sortable', $allowedPropOptions);
 
         /** @var \Illuminate\Database\Eloquent\Model $model */
         $model = new $modelClass;
 
         $schema = $this->initSchema($model, $fresh);
 
-        // Locked properties, filters, and sorts are skipped:
+        // Locked properties, scopes, filters, and sorts are skipped:
         // - If the element is present in the existing schema, it must remain unchanged in the updated schema.
         // - If the element is absent in the existing schema, it must remain absent in the updated schema.
         $lock = $this->initLock($model, $fresh);
@@ -120,6 +123,11 @@ class MakeModelSchema extends Command
             $schema['properties'] ?? [],
             $lock['properties'] ?? [],
         );
+        $schema['scopes'] = $this->getModelScopes(
+            $model,
+            $schema['scopes'] ?? [],
+            $lock['scopes'] ?? [],
+        );
         $schema['request']['filtrable']['properties'] = $this->getRequestProperties(
             $model,
             $filtrable,
@@ -128,8 +136,10 @@ class MakeModelSchema extends Command
             $lock['request']['filtrable']['properties'] ?? [],
             'filtrable',
         );
-        $schema['request']['filtrable']['scopes'] = $this->getModelScopes(
+        $schema['request']['filtrable']['scopes'] = $this->getRequestScopes(
             $model,
+            $scopable,
+            $schema['scopes'],
             $schema['request']['filtrable']['scopes'] ?? [],
             $lock['request']['filtrable']['scopes'] ?? [],
         );
@@ -153,6 +163,7 @@ class MakeModelSchema extends Command
             'properties' => [],
             'unique_identifier' => $model->getKeyName(),
             'primary_identifiers' => $model->primaryIdentifiers ?? null,
+            'scopes' => [],
             'request' => [
                 'filtrable' => [
                     'properties' => [],
@@ -548,20 +559,69 @@ class MakeModelSchema extends Command
                 ->all(),
         };
 
-        $requestProperties = [];
+        $finalRequestProps = [];
         foreach ($requestProps as $requestProp) {
             if (in_array($requestProp, $lockedRequestProps)) {
                 if ($lockedExistingRequestProps->has($requestProp)) {
-                    $requestProperties[] = $lockedExistingRequestProps->pull($requestProp);
+                    $finalRequestProps[] = $lockedExistingRequestProps->pull($requestProp);
                 }
             } elseif ($properties->has($requestProp)) {
-                $requestProperties[] = $requestProp;
+                $finalRequestProps[] = $requestProp;
             }
         }
 
-        array_push($requestProperties, ...$lockedExistingRequestProps->values());
+        // we add remaining existing locked properties only if they exist in properties
+        foreach ($lockedExistingRequestProps as $requestProp) {
+            if ($properties->has($requestProp)) {
+                $finalRequestProps[] = $requestProp;
+            }
+        }
 
-        return $requestProperties;
+        return $finalRequestProps;
+    }
+
+    private function getRequestScopes(
+        Model $model,
+        string $option,
+        array $scopes,
+        array $existingRequestScopes,
+        array $lockedRequestScopes,
+    ): array {
+        $scopes = collect($scopes)->keyBy('id');
+        $lockedExistingRequestScopes = collect($existingRequestScopes)
+            ->keyBy(fn ($prop) => $prop)
+            ->filter(fn ($prop) => in_array($prop, $lockedRequestScopes));
+
+        $requestScopes = match ($option) {
+            'none' => [],
+            'model' => is_array($model->scopable)
+                ? $model->scopable
+                : throw new \Exception('invalid scopable in model '.get_class($model)),
+            'all' => $scopes
+                ->pluck('id')
+                ->values()
+                ->all(),
+        };
+
+        $finalRequestScopes = [];
+        foreach ($requestScopes as $requestScope) {
+            if (in_array($requestScope, $lockedRequestScopes)) {
+                if ($lockedExistingRequestScopes->has($requestScope)) {
+                    $finalRequestScopes[] = $lockedExistingRequestScopes->pull($requestScope);
+                }
+            } elseif ($scopes->has($requestScope)) {
+                $finalRequestScopes[] = $requestScope;
+            }
+        }
+
+        // we add remaining existing locked scopes only if they exist in scopes
+        foreach ($lockedExistingRequestScopes as $requestScope) {
+            if ($scopes->has($requestScope)) {
+                $finalRequestScopes[] = $requestScope;
+            }
+        }
+
+        return $finalRequestScopes;
     }
 
     private function saveFile(Model $model, array $schema)
@@ -617,7 +677,9 @@ class MakeModelSchema extends Command
             }
 
             $value = $this->choice(
-                "Which properties should be $option ?",
+                $option == 'scopable'
+                    ? 'Which scope should be filtrable ?'
+                    : "Which properties should be $option ?",
                 $allowedValues,
             );
         }

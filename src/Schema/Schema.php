@@ -19,6 +19,7 @@ class Schema
         };
 
         $data['properties'] = $indexArray($data['properties'] ?? []);
+        $data['scopes'] = $indexArray($data['scopes'] ?? []);
         $data['request']['filtrable']['properties'] = $indexArray($data['request']['filtrable']['properties'] ?? []);
         $data['request']['filtrable']['scopes'] = $indexArray($data['request']['filtrable']['scopes'] ?? []);
         $data['request']['sortable'] = $indexArray($data['request']['sortable'] ?? []);
@@ -51,14 +52,19 @@ class Schema
         return isset($this->data['properties'][$propertyId]);
     }
 
+    public function getScope(string $scopeId): ?array
+    {
+        return $this->data['scopes'][$scopeId] ?? null;
+    }
+
+    public function hasScope(string $scopeId): bool
+    {
+        return isset($this->data['scopes'][$scopeId]);
+    }
+
     public function isFiltrable(string $propertyId): bool
     {
         return isset($this->data['request']['filtrable']['properties'][$propertyId]);
-    }
-
-    public function getScope(string $scopeId): ?array
-    {
-        return $this->data['request']['filtrable']['scopes'][$scopeId] ?? null;
     }
 
     public function isScopable(string $scopeId): bool

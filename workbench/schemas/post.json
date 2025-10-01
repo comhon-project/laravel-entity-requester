@@ -21,15 +21,16 @@
     ],
     "unique_identifier": "id",
     "primary_identifiers": null,
+    "scopes": [
+        {
+            "id": "validated",
+            "parameters": []
+        }
+    ],
     "request": {
         "filtrable": {
             "properties": ["name"],
-            "scopes": [
-                {
-                    "id": "validated",
-                    "parameters": []
-                }
-            ]
+            "scopes": ["validated"]
         },
         "sortable": ["name", "owner", "tags", "publicTags"]
     }

@@ -38,15 +38,16 @@
     ],
     "unique_identifier": "id",
     "primary_identifiers": null,
+    "scopes": [
+        {
+            "id": "expensive",
+            "parameters": []
+        }
+    ],
     "request": {
         "filtrable": {
             "properties": ["buyer", "tags", "amount"],
-            "scopes": [
-                {
-                    "id": "expensive",
-                    "parameters": []
-                }
-            ]
+            "scopes": ["expensive"]
         },
         "sortable": ["buyer", "tags", "amount"]
     }

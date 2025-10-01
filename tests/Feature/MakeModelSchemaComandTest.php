@@ -40,8 +40,11 @@ class MakeModelSchemaComandTest extends TestCase
         $filePath = $this->getDataFilePath($fileName);
         if (! class_exists(Scope::class)) {
             $schema = json_decode(file_get_contents($filePath), true);
-            $schema['request']['filtrable']['scopes'] = collect($schema['request']['filtrable']['scopes'])->filter(
+            $schema['scopes'] = collect($schema['scopes'])->filter(
                 fn ($scope) => ! is_array($scope) || $scope['id'] != 'age'
+            )->values();
+            $schema['request']['filtrable']['scopes'] = collect($schema['request']['filtrable']['scopes'])->filter(
+                fn ($scopeId) => $scopeId != 'age'
             )->values();
             $filePath = tempnam(sys_get_temp_dir(), 'schema-');
             file_put_contents($filePath, json_encode($schema, JSON_PRETTY_PRINT));
@@ -71,6 +74,9 @@ class MakeModelSchemaComandTest extends TestCase
         }
         if (! isset($options['--sortable'])) {
             $options['--sortable'] = 'none';
+        }
+        if (! isset($options['--scopable'])) {
+            $options['--scopable'] = 'none';
         }
         if ($pretty) {
             $options['--pretty'] = true;
@@ -120,6 +126,8 @@ class MakeModelSchemaComandTest extends TestCase
         $this->artisan('entity-requester:make-model-schema', ['model' => 'User'])
             ->expectsQuestion('Which properties should be filtrable ?', 'foo')
             ->expectsQuestion('Which properties should be filtrable ?', 'none')
+            ->expectsQuestion('Which scope should be filtrable ?', 'foo')
+            ->expectsQuestion('Which scope should be filtrable ?', 'none')
             ->expectsQuestion('Which properties should be sortable ?', 'foo')
             ->expectsQuestion('Which properties should be sortable ?', 'none')
             ->assertExitCode(0);
@@ -175,6 +183,7 @@ class MakeModelSchemaComandTest extends TestCase
                 ],
                 "unique_identifier": "id",
                 "primary_identifiers": null,
+                "scopes": [],
                 "request": {
                     "filtrable": {
                         "properties": [],
@@ -236,15 +245,16 @@ class MakeModelSchemaComandTest extends TestCase
                 ],
                 "unique_identifier": "id",
                 "primary_identifiers": null,
+                "scopes": [
+                    {
+                        "id": "expensive",
+                        "parameters": []
+                    }
+                ],
                 "request": {
                     "filtrable": {
                         "properties": [],
-                        "scopes": [
-                            {
-                                "id": "expensive",
-                                "parameters": []
-                            }
-                        ]
+                        "scopes": []
                     },
                     "sortable": []
                 }
@@ -360,6 +370,32 @@ class MakeModelSchemaComandTest extends TestCase
                 [],
             ],
             [
+                'all',
+                [
+                    'id',
+                    'email',
+                    'password',
+                    'name',
+                    'first_name',
+                    'preferred_locale',
+                    'birth_date',
+                    'birth_day',
+                    'birth_hour',
+                    'age',
+                    'score',
+                    'comment',
+                    'status',
+                    'favorite_fruits',
+                    'has_consumer_ability',
+                    'email_verified_at',
+                    'parent_id',
+                    'posts',
+                    'friends',
+                    'purchases',
+                    'childrenPosts',
+                ],
+            ],
+            [
                 'attributes',
                 [
                     'id',
@@ -391,6 +427,57 @@ class MakeModelSchemaComandTest extends TestCase
         ];
     }
 
+    #[DataProvider('providerScopableOptions')]
+    public function test_create_model_schema_scopable_option($option, $expectedScopable)
+    {
+        $this->callMakeModelSchemaCommand(User::class, ['--scopable' => $option]);
+        $this->assertFileExists($this->getSchemaPath('user.json'));
+        $json = file_get_contents($this->getSchemaPath('user.json'));
+
+        if (! class_exists(Scope::class)) {
+            $expectedScopable = collect($expectedScopable)->filter(
+                fn ($scopeId) => $scopeId != 'age'
+            )->values();
+        }
+
+        $expected = str_replace(
+            '"scopes": []',
+            '"scopes": '.$this->toJsonSchemaPart($expectedScopable, 8),
+            file_get_contents($this->getExpectedSchemaPath('user.json')),
+        );
+
+        $this->assertShemaStringEqualsShemaString($expected, $json);
+    }
+
+    public static function providerScopableOptions()
+    {
+        return [
+            [
+                'none',
+                [],
+            ],
+            [
+                'all',
+                [
+                    'validated',
+                    'age',
+                    'bool',
+                    'carbon',
+                    'dateTime',
+                    'foo',
+                    'resolvable',
+                ],
+            ],
+            [
+                'model',
+                [
+                    'foo',
+                    'bool',
+                ],
+            ],
+        ];
+    }
+
     #[DataProvider('providerBoolean')]
     public function test_update_model_schema_success($fresh)
     {
@@ -405,12 +492,36 @@ class MakeModelSchemaComandTest extends TestCase
         );
         $this->callMakeModelSchemaCommand(User::class, [
             '--filtrable' => $fresh ? 'none' : 'all',
-            '--sortable' => $fresh ? 'none' : 'attributes',
+            '--sortable' => $fresh ? 'none' : 'all',
+            '--scopable' => $fresh ? 'none' : 'all',
             ...($fresh ? ['--fresh' => true] : []),
         ]);
         $this->assertFileExists($this->getSchemaPath('user.json'));
 
-        $filename = $fresh ? 'user.json' : 'user-updated.json';
+        $filename = $fresh ? 'user.json' : 'user-updated-all.json';
+
+        $this->assertShemaFileEqualsShemaFile($this->getExpectedSchemaPath($filename), $this->getSchemaPath('user.json'));
+    }
+
+    public function test_update_model_schema_keep_existing_locked_success()
+    {
+        mkdir(EntityRequester::getSchemaDirectory());
+        copy(
+            $this->getDataFilePath('user-partial.json'),
+            $this->getSchemaPath('user.json')
+        );
+        copy(
+            $this->getDataFilePath('user.lock'),
+            $this->getSchemaPath('user.lock')
+        );
+        $this->callMakeModelSchemaCommand(User::class, [
+            '--filtrable' => 'model',
+            '--sortable' => 'model',
+            '--scopable' => 'model',
+        ]);
+        $this->assertFileExists($this->getSchemaPath('user.json'));
+
+        $filename = 'user-updated-model.json';
 
         $this->assertShemaFileEqualsShemaFile($this->getExpectedSchemaPath($filename), $this->getSchemaPath('user.json'));
     }

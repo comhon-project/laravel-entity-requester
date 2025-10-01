@@ -108,7 +108,7 @@ class SchemaFactoryTest extends TestCase
         $this->assertJsonStringEqualsJsonFile($this->getSchemaPath('user'), $schema);
     }
 
-    public function test_flush_all_schemas()
+    public function test_flush_all_schemas_success()
     {
         config(['entity-requester.use_cache' => true]);
         app(SchemaFactory::class)->get('user');
@@ -128,6 +128,15 @@ class SchemaFactoryTest extends TestCase
         $this->assertFalse($cache->has($this->getSchemaCacheKey('user', true)));
         $this->assertFalse($cache->has($this->getSchemaCacheKey('visible', false)));
         $this->assertFalse($cache->has($this->getSchemaCacheKey('visible', true)));
+    }
+
+    public function test_flush_all_schemas_invalid_driver()
+    {
+        config(['cache.default' => 'database']);
+        config(['entity-requester.use_cache' => true]);
+
+        $this->expectExceptionMessage('cannot flush all schemas from cache');
+        EntityRequester::refreshCache();
     }
 
     public function test_flush_one_schemas()

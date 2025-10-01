@@ -36,6 +36,48 @@
     ],
     "unique_identifier": "id",
     "primary_identifiers": ["name", "first_name"],
+    "scopes": [
+        {
+            "id": "foo",
+            "parameters": [
+                {
+                    "id": "foo",
+                    "name": "foo",
+                    "type": "string",
+                    "nullable": false
+                },
+                {
+                    "id": "bar",
+                    "name": "bar",
+                    "type": "float",
+                    "nullable": false
+                },
+                {
+                    "id": "fruit",
+                    "name": "fruit",
+                    "type": "string",
+                    "enum": {
+                        "apple": "apple",
+                        "orange": "orange",
+                        "strawberry": "strawberry",
+                        "LOCKED": "locked"
+                    },
+                    "nullable": false
+                }
+            ]
+        },
+        {
+            "id": "locked_scope",
+            "parameters": [
+                {
+                    "id": "foo",
+                    "name": "foo",
+                    "type": "array",
+                    "children": { "type": "integer" }
+                }
+            ]
+        }
+    ],
     "request": {
         "filtrable": {
             "properties": [
@@ -44,48 +86,7 @@
                 "first_name",
                 "property_doesnt_exist"
             ],
-            "scopes": [
-                {
-                    "id": "foo",
-                    "parameters": [
-                        {
-                            "id": "foo",
-                            "name": "foo",
-                            "type": "string",
-                            "nullable": false
-                        },
-                        {
-                            "id": "bar",
-                            "name": "bar",
-                            "type": "float",
-                            "nullable": false
-                        },
-                        {
-                            "id": "fruit",
-                            "name": "fruit",
-                            "type": "string",
-                            "enum": {
-                                "apple": "apple",
-                                "orange": "orange",
-                                "strawberry": "strawberry",
-                                "LOCKED": "locked"
-                            },
-                            "nullable": false
-                        }
-                    ]
-                },
-                {
-                    "id": "locked_scope",
-                    "parameters": [
-                        {
-                            "id": "foo",
-                            "name": "foo",
-                            "type": "array",
-                            "children": { "type": "integer" }
-                        }
-                    ]
-                }
-            ]
+            "scopes": ["foo", "locked_scope"]
         },
         "sortable": ["id", "email", "property_doesnt_exist"]
     }

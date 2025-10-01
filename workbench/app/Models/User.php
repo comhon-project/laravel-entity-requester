@@ -35,6 +35,11 @@ class User extends Authenticatable
         'name',
     ];
 
+    public $scopable = [
+        'foo',
+        'bool',
+    ];
+
     /**
      * The attributes that should be cast.
      *

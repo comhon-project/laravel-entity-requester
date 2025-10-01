@@ -21,6 +21,12 @@ class SchemaTest extends TestCase
         $this->assertEquals(null, $schema->getProperty('foo'));
         $this->assertEquals(false, $schema->hasProperty('foo'));
 
+        $this->assertEquals('foo', $schema->getScope('foo')['id']);
+        $this->assertEquals(true, $schema->hasScope('foo'));
+
+        $this->assertEquals(null, $schema->getScope('bar'));
+        $this->assertEquals(false, $schema->hasScope('bar'));
+
         $this->assertEquals(true, $schema->isFiltrable('first_name'));
         $this->assertEquals(false, $schema->isFiltrable('foo'));
 

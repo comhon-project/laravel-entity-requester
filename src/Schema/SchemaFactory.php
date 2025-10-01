@@ -10,12 +10,15 @@ use Comhon\EntityRequester\Interfaces\SchemaFactoryInterface;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use Illuminate\Cache\Repository;
 use Illuminate\Cache\TaggableStore;
+use Illuminate\Cache\TaggedCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 
 class SchemaFactory implements CacheableInterface, ResponsableInterface, SchemaFactoryInterface
 {
     private array $schemas = [];
+
+    private Repository $cache;
 
     public function get(string $id): Schema
     {
@@ -69,11 +72,13 @@ class SchemaFactory implements CacheableInterface, ResponsableInterface, SchemaF
      */
     public function refresh(?string $id = null): void
     {
-        if ($id) {
+        if ($id !== null) {
             $this->getCache()->forget('entity-requester::schema-object::'.$id);
             $this->getCache()->forget('entity-requester::schema-json::'.$id);
-        } else {
+        } elseif ($this->getCache() instanceof TaggedCache) {
             $this->getCache()->flush();
+        } else {
+            throw new \Exception('cannot flush all schemas from cache, cache driver must manage tags');
         }
     }
 
@@ -82,9 +87,13 @@ class SchemaFactory implements CacheableInterface, ResponsableInterface, SchemaF
      */
     public function getCache(): Repository
     {
-        return Cache::getStore() instanceof TaggableStore
-            ? Cache::tags(['entity-requester::schema'])
-            : Cache::store();
+        if (! isset($this->cache)) {
+            $this->cache = Cache::getStore() instanceof TaggableStore
+                ? Cache::tags(['entity-requester::schema'])
+                : Cache::store();
+        }
+
+        return $this->cache;
     }
 
     private function getPath(string $id): string

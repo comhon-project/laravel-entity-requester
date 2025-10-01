@@ -4,6 +4,10 @@
         "posts",
         "locked_property"
     ],
+    "scopes": [
+        "foo",
+        "locked_scope"
+    ],
     "request": {
         "filtrable": {
             "properties": [
