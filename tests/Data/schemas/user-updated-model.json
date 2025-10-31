@@ -24,8 +24,8 @@
         },
         {
             "id": "first_name",
-            "type": "string",
-            "nullable": false
+            "type": "float",
+            "nullable": true
         },
         {
             "id": "preferred_locale",
@@ -99,6 +99,10 @@
             "id": "parent_id",
             "type": "integer",
             "nullable": true
+        },
+        {
+            "id": "locked_property",
+            "type": "float"
         },
         {
             "id": "posts",
@@ -198,7 +202,8 @@
                     "enum": {
                         "apple": "apple",
                         "orange": "orange",
-                        "strawberry": "strawberry"
+                        "strawberry": "strawberry",
+                        "LOCKED": "locked"
                     },
                     "nullable": false
                 }
@@ -214,13 +219,17 @@
                     "nullable": false
                 }
             ]
-        }
-    ],
-    "request": {
-        "filtrable": {
-            "properties": [],
-            "scopes": []
         },
-        "sortable": []
-    }
+        {
+            "id": "locked_scope",
+            "parameters": [
+                {
+                    "id": "foo",
+                    "name": "foo",
+                    "type": "array",
+                    "children": { "type": "integer" }
+                }
+            ]
+        }
+    ]
 }

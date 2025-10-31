@@ -2,7 +2,7 @@
 
 namespace Comhon\EntityRequester\Interfaces;
 
-use Comhon\EntityRequester\Schema\Schema;
+use Comhon\EntityRequester\DTOs\Schema;
 
 interface SchemaFactoryInterface
 {

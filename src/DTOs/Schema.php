@@ -1,6 +1,6 @@
 <?php
 
-namespace Comhon\EntityRequester\Schema;
+namespace Comhon\EntityRequester\DTOs;
 
 class Schema
 {
@@ -20,9 +20,6 @@ class Schema
 
         $data['properties'] = $indexArray($data['properties'] ?? []);
         $data['scopes'] = $indexArray($data['scopes'] ?? []);
-        $data['request']['filtrable']['properties'] = $indexArray($data['request']['filtrable']['properties'] ?? []);
-        $data['request']['filtrable']['scopes'] = $indexArray($data['request']['filtrable']['scopes'] ?? []);
-        $data['request']['sortable'] = $indexArray($data['request']['sortable'] ?? []);
 
         $this->data = $data;
     }
@@ -62,23 +59,8 @@ class Schema
         return isset($this->data['scopes'][$scopeId]);
     }
 
-    public function isFiltrable(string $propertyId): bool
-    {
-        return isset($this->data['request']['filtrable']['properties'][$propertyId]);
-    }
-
-    public function isScopable(string $scopeId): bool
-    {
-        return isset($this->data['request']['filtrable']['scopes'][$scopeId]);
-    }
-
-    public function isSortable(string $propertyId): bool
-    {
-        return isset($this->data['request']['sortable'][$propertyId]);
-    }
-
     public function getDefaultSort(): ?array
     {
-        return $this->data['request']['default_sort'] ?? null;
+        return $this->data['default_sort'] ?? null;
     }
 }

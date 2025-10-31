@@ -112,47 +112,49 @@ class MakeModelSchema extends Command
         $model = new $modelClass;
 
         $schema = $this->initSchema($model, $fresh);
+        $requestAccess = $this->initRequestAccess($model, $fresh);
 
         // Locked properties, scopes, filters, and sorts are skipped:
         // - If the element is present in the existing schema, it must remain unchanged in the updated schema.
         // - If the element is absent in the existing schema, it must remain absent in the updated schema.
-        $lock = $this->initLock($model, $fresh);
+        $schemaLock = $this->initSchemaLock($model, $fresh);
+        $requestAccessLock = $this->initRequestSchemaLock($model, $fresh);
 
         $schema['properties'] = $this->getProperties(
             $model,
             $schema['properties'] ?? [],
-            $lock['properties'] ?? [],
+            $schemaLock['properties'] ?? [],
         );
         $schema['scopes'] = $this->getModelScopes(
             $model,
             $schema['scopes'] ?? [],
-            $lock['scopes'] ?? [],
+            $schemaLock['scopes'] ?? [],
         );
-        $schema['request']['filtrable']['properties'] = $this->getRequestProperties(
+        $requestAccess['filtrable']['properties'] = $this->getRequestProperties(
             $model,
             $filtrable,
             $schema['properties'],
-            $schema['request']['filtrable']['properties'] ?? [],
-            $lock['request']['filtrable']['properties'] ?? [],
+            $requestAccess['filtrable']['properties'] ?? [],
+            $requestAccessLock['filtrable']['properties'] ?? [],
             'filtrable',
         );
-        $schema['request']['filtrable']['scopes'] = $this->getRequestScopes(
+        $requestAccess['filtrable']['scopes'] = $this->getRequestScopes(
             $model,
             $scopable,
             $schema['scopes'],
-            $schema['request']['filtrable']['scopes'] ?? [],
-            $lock['request']['filtrable']['scopes'] ?? [],
+            $requestAccess['filtrable']['scopes'] ?? [],
+            $requestAccessLock['filtrable']['scopes'] ?? [],
         );
-        $schema['request']['sortable'] = $this->getRequestProperties(
+        $requestAccess['sortable'] = $this->getRequestProperties(
             $model,
             $sortable,
             $schema['properties'],
-            $schema['request']['sortable'] ?? [],
-            $lock['request']['sortable'] ?? [],
+            $requestAccess['sortable'] ?? [],
+            $requestAccessLock['sortable'] ?? [],
             'sortable',
         );
 
-        $this->saveFile($model, $schema);
+        $this->saveFile($model, $schema, $requestAccess);
     }
 
     private function initSchema(Model $model, bool $fresh)
@@ -164,13 +166,6 @@ class MakeModelSchema extends Command
             'unique_identifier' => $model->getKeyName(),
             'primary_identifiers' => $model->primaryIdentifiers ?? null,
             'scopes' => [],
-            'request' => [
-                'filtrable' => [
-                    'properties' => [],
-                    'scopes' => [],
-                ],
-                'sortable' => [],
-            ],
         ];
 
         $schemaPath = $this->getSchemaPath($model);
@@ -184,20 +179,56 @@ class MakeModelSchema extends Command
         return $schema;
     }
 
-    private function initLock(Model $model, bool $fresh)
+    private function initRequestAccess(Model $model, bool $fresh)
+    {
+        $schema = [
+            'id' => $this->getModelUniqueName($model),
+            'filtrable' => [
+                'properties' => [],
+                'scopes' => [],
+            ],
+            'sortable' => [],
+        ];
+
+        $schemaPath = $this->getRequestAccessPath($model);
+        if (! $fresh && file_exists($schemaPath)) {
+            $schema = [
+                ...$schema,
+                ...json_decode(file_get_contents($schemaPath), true),
+            ];
+        }
+
+        return $schema;
+    }
+
+    private function initSchemaLock(Model $model, bool $fresh)
     {
         $lock = [
             'properties' => [],
-            'request' => [
-                'filtrable' => [
-                    'properties' => [],
-                    'scopes' => [],
-                ],
-                'sortable' => [],
-            ],
         ];
 
         $lockPath = $this->getSchemaLockPath($model);
+        if (! $fresh && file_exists($lockPath)) {
+            $lock = [
+                ...$lock,
+                ...json_decode(file_get_contents($lockPath), true),
+            ];
+        }
+
+        return $lock;
+    }
+
+    private function initRequestSchemaLock(Model $model, bool $fresh)
+    {
+        $lock = [
+            'filtrable' => [
+                'properties' => [],
+                'scopes' => [],
+            ],
+            'sortable' => [],
+        ];
+
+        $lockPath = $this->getRequestAccessLockPath($model);
         if (! $fresh && file_exists($lockPath)) {
             $lock = [
                 ...$lock,
@@ -624,21 +655,29 @@ class MakeModelSchema extends Command
         return $finalRequestScopes;
     }
 
-    private function saveFile(Model $model, array $schema)
+    private function saveFile(Model $model, array $schema, $requestAccess)
     {
-        if ($this->getModelUniqueName($model) !== $schema['name']) {
-            throw new \Exception('mismatching names');
+        if ($this->getModelUniqueName($model) !== $schema['id']) {
+            throw new \Exception("mismatching 'id' and model unique name on model schema");
+        }
+        if ($this->getModelUniqueName($model) !== $requestAccess['id']) {
+            throw new \Exception("mismatching 'id' and model unique name on request access");
         }
 
-        $schemaPath = $this->getSchemaPath($model);
-        $schemaDir = dirname($schemaPath);
-        if (! file_exists($schemaDir)) {
-            mkdir($schemaDir);
+        $contents = [
+            $this->getSchemaPath($model) => $schema,
+            $this->getRequestAccessPath($model) => $requestAccess,
+        ];
+        foreach ($contents as $path => $content) {
+            $dir = dirname($path);
+            if (! file_exists($dir)) {
+                mkdir($dir);
+            }
+            file_put_contents(
+                $path,
+                json_encode($content, $this->option('pretty') ? JSON_PRETTY_PRINT : 0)
+            );
         }
-        file_put_contents(
-            $schemaPath,
-            json_encode($schema, $this->option('pretty') ? JSON_PRETTY_PRINT : 0)
-        );
     }
 
     private function getModelUniqueName(Model $model)
@@ -665,6 +704,21 @@ class MakeModelSchema extends Command
     private function getSchemaPathWithoutExtension(Model $model)
     {
         return EntityRequester::getSchemaDirectory().DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
+    }
+
+    private function getRequestAccessPath(Model $model)
+    {
+        return $this->getRequestAccessPathWithoutExtension($model).'.json';
+    }
+
+    private function getRequestAccessLockPath(Model $model)
+    {
+        return $this->getRequestAccessPathWithoutExtension($model).'.lock';
+    }
+
+    private function getRequestAccessPathWithoutExtension(Model $model)
+    {
+        return EntityRequester::getRequestAccessDirectory().DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
     }
 
     private function getRequestOption(string $option, array $allowedValues): string

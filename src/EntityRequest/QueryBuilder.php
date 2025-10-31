@@ -1,24 +1,23 @@
 <?php
 
-namespace Comhon\EntityRequester\Database;
+namespace Comhon\EntityRequester\EntityRequest;
 
+use Comhon\EntityRequester\Database\RelationJoiner;
+use Comhon\EntityRequester\Database\Utils;
 use Comhon\EntityRequester\DTOs\AbstractCondition;
 use Comhon\EntityRequester\DTOs\Condition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\DTOs\Group;
 use Comhon\EntityRequester\DTOs\RelationshipCondition;
+use Comhon\EntityRequester\DTOs\Schema;
 use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Enums\RelationshipConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
-use Comhon\EntityRequester\Exceptions\NotFiltrableException;
-use Comhon\EntityRequester\Exceptions\NotScopableException;
-use Comhon\EntityRequester\Exceptions\NotSortableException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
 use Comhon\EntityRequester\Interfaces\SchemaFactoryInterface;
-use Comhon\EntityRequester\Schema\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -34,14 +33,14 @@ use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 use ReflectionMethod;
 
-class EntityRequestBuilder
+class QueryBuilder
 {
     public function __construct(private SchemaFactoryInterface $schemaFactory) {}
 
     /**
      * transform given inputs to query builder
      */
-    public static function fromInputs(array $inputs, ?string $modelClass = null): Builder
+    public function fromInputs(array $inputs, ?string $modelClass = null): Builder
     {
         return static::fromEntityRequest(new EntityRequest($inputs, $modelClass));
     }
@@ -49,7 +48,7 @@ class EntityRequestBuilder
     /**
      * transform given entity request to query builder
      */
-    public static function fromEntityRequest(EntityRequest $entityRequest): Builder
+    public function fromEntityRequest(EntityRequest $entityRequest): Builder
     {
         $builder = app(static::class);
         $class = $entityRequest->getModelClass();
@@ -75,9 +74,6 @@ class EntityRequestBuilder
                 if (strpos($sortElement['property'], '.')) {
                     $this->addRelationshipSort($query, $sortElement);
                 } else {
-                    if (! $schema->isSortable($sortElement['property'])) {
-                        throw new NotSortableException($sortElement['property']);
-                    }
                     $query->orderBy($sortElement['property'], $sortElement['order']->value);
                 }
             }
@@ -121,10 +117,6 @@ class EntityRequestBuilder
         ?string $table = null
     ) {
         $propertyId = $condition->getProperty();
-
-        if (! $schema->isFiltrable($propertyId)) {
-            throw new NotFiltrableException($propertyId);
-        }
 
         if (empty($table)) {
             $table = $query instanceof JoinClause
@@ -193,10 +185,6 @@ class EntityRequestBuilder
         $countOperator = $condition->getCountOperator()->value;
         $count = $condition->getCount();
 
-        if (! $schema->isFiltrable($propertyId)) {
-            throw new NotFiltrableException($propertyId);
-        }
-
         $callWhere = $isHas
             ? ($and ? 'whereHas' : 'orWhereHas')
             : ($and ? 'whereDoesntHave' : 'orWhereDoesntHave');
@@ -225,9 +213,6 @@ class EntityRequestBuilder
     private function addScope(Schema $schema, Builder $query, Scope $scope, bool $and)
     {
         $scopeName = $scope->getName();
-        if (! $schema->isScopable($scopeName)) {
-            throw new NotScopableException($scopeName);
-        }
         try {
             $scopeParameters = $scope->getParameters() ?? [];
             $schemaScopes = $schema->getScope($scopeName);
@@ -278,10 +263,6 @@ class EntityRequestBuilder
             $isLastModel = $i == count($explodedProperty) - 2;
             $currentFilter = $isLastModel ? $filter : null;
 
-            $parentSchema = $this->schemaFactory->get(get_class($parentModel));
-            if (! $parentSchema->isSortable($relationName)) {
-                throw new NotSortableException($relationName);
-            }
             $relation = $parentModel->query()->getRelation($relationName);
             if ($relation instanceof MorphTo) {
                 throw new \Exception('MorphTo relations not managed for sorting');
@@ -303,12 +284,7 @@ class EntityRequestBuilder
             $aliasLeft = $aliasRight;
         }
 
-        $lastSortModel = $relation->getRelated();
-        $foreignSchema = $this->schemaFactory->get(get_class($lastSortModel));
         $sortProperty = $explodedProperty[array_key_last($explodedProperty)];
-        if (! $foreignSchema->isSortable($sortProperty)) {
-            throw new NotSortableException($sortProperty);
-        }
 
         $requestedModel = $query->getModel();
         $query->select($requestedModel->getTable().'.*');

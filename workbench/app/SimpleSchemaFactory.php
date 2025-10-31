@@ -2,9 +2,9 @@
 
 namespace App;
 
+use Comhon\EntityRequester\DTOs\Schema;
 use Comhon\EntityRequester\Facades\EntityRequester;
 use Comhon\EntityRequester\Interfaces\SchemaFactoryInterface;
-use Comhon\EntityRequester\Schema\Schema;
 
 class SimpleSchemaFactory implements SchemaFactoryInterface
 {

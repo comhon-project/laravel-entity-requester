@@ -27,13 +27,9 @@ class SchemaTest extends TestCase
         $this->assertEquals(null, $schema->getScope('bar'));
         $this->assertEquals(false, $schema->hasScope('bar'));
 
-        $this->assertEquals(true, $schema->isFiltrable('first_name'));
-        $this->assertEquals(false, $schema->isFiltrable('foo'));
-
-        $this->assertEquals(true, $schema->isScopable('carbon'));
-        $this->assertEquals(false, $schema->isScopable('foobar'));
-
-        $this->assertEquals(true, $schema->isSortable('birth_date'));
-        $this->assertEquals(false, $schema->isSortable('foo'));
+        $this->assertEquals(
+            [['property' => 'name'], ['property' => 'first_name']],
+            $schema->getDefaultSort()
+        );
     }
 }

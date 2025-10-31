@@ -1,0 +1,8 @@
+{
+    "id": "post",
+    "filtrable": {
+        "properties": ["name"],
+        "scopes": ["validated"]
+    },
+    "sortable": ["name", "owner", "tags", "publicTags"]
+}

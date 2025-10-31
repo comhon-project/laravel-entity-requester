@@ -1,0 +1,8 @@
+{
+    "id": "purchase",
+    "filtrable": {
+        "properties": ["buyer", "tags", "amount"],
+        "scopes": ["expensive"]
+    },
+    "sortable": ["buyer", "tags", "amount"]
+}

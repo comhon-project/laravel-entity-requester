@@ -3,11 +3,11 @@
 namespace Tests\Feature\Feature;
 
 use App\Models\User;
+use Comhon\EntityRequester\DTOs\Schema;
 use Comhon\EntityRequester\Exceptions\SchemaNotFoundException;
 use Comhon\EntityRequester\Facades\EntityRequester;
+use Comhon\EntityRequester\Factories\SchemaFactory;
 use Comhon\EntityRequester\Interfaces\SchemaFactoryInterface;
-use Comhon\EntityRequester\Schema\Schema;
-use Comhon\EntityRequester\Schema\SchemaFactory;
 use Illuminate\Cache\Repository;
 use Illuminate\Cache\TaggedCache;
 use Illuminate\Http\JsonResponse;
@@ -38,6 +38,8 @@ class SchemaFactoryTest extends TestCase
 
     private function getDataFilePath(string $fileName)
     {
+        $fileName = str_replace('/', DIRECTORY_SEPARATOR, $fileName);
+
         return dirname(__DIR__).DIRECTORY_SEPARATOR.'Data'.DIRECTORY_SEPARATOR.$fileName;
     }
 
@@ -49,7 +51,7 @@ class SchemaFactoryTest extends TestCase
 
         $this->assertInstanceOf(Schema::class, $schema);
         $this->assertEquals(
-            json_decode(file_get_contents($this->getDataFilePath('user-indexed.json')), true),
+            json_decode(file_get_contents($this->getDataFilePath('schemas/user-indexed.json')), true),
             $schema->getData()
         );
         $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
@@ -75,7 +77,7 @@ class SchemaFactoryTest extends TestCase
 
         $this->assertInstanceOf(Schema::class, $schema);
         $this->assertEquals(
-            json_decode(file_get_contents($this->getDataFilePath('user-indexed.json')), true),
+            json_decode(file_get_contents($this->getDataFilePath('schemas/user-indexed.json')), true),
             $schema->getData()
         );
         $this->assertTrue($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
@@ -86,7 +88,7 @@ class SchemaFactoryTest extends TestCase
 
         $this->assertInstanceOf(Schema::class, $schema);
         $this->assertEquals(
-            json_decode(file_get_contents($this->getDataFilePath('user-indexed.json')), true),
+            json_decode(file_get_contents($this->getDataFilePath('schemas/user-indexed.json')), true),
             $schema->getData()
         );
     }
@@ -135,7 +137,7 @@ class SchemaFactoryTest extends TestCase
         config(['cache.default' => 'database']);
         config(['entity-requester.use_cache' => true]);
 
-        $this->expectExceptionMessage('cannot flush all schemas from cache');
+        $this->expectExceptionMessage('cache driver must manage tags');
         EntityRequester::refreshCache();
     }
 
@@ -169,6 +171,7 @@ class SchemaFactoryTest extends TestCase
     public function test_get_schema_not_found()
     {
         $this->expectException(SchemaNotFoundException::class);
+        $this->expectExceptionMessage("schema 'foo' not found");
         app(SchemaFactoryInterface::class)->get('foo');
     }
 

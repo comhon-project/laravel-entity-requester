@@ -10,12 +10,5 @@
     ],
     "unique_identifier": "id",
     "primary_identifiers": null,
-    "scopes": [],
-    "request": {
-        "filtrable": {
-            "properties": [],
-            "scopes": []
-        },
-        "sortable": []
-    }
+    "scopes": []
 }

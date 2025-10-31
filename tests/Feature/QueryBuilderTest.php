@@ -6,20 +6,17 @@ use App\Enums\Fruit;
 use App\Models\Purchase;
 use App\Models\User;
 use Comhon\EntityRequester\Database\AliasCounter;
-use Comhon\EntityRequester\Database\EntityRequestBuilder;
 use Comhon\EntityRequester\DTOs\Condition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
-use Comhon\EntityRequester\Exceptions\NotFiltrableException;
-use Comhon\EntityRequester\Exceptions\NotScopableException;
-use Comhon\EntityRequester\Exceptions\NotSortableException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
+use Comhon\EntityRequester\Facades\QueryBuilder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
-class EntityRequesterBuilderTest extends TestCase
+class QueryBuilderTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -29,7 +26,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_request_only_class_name()
     {
-        $query = EntityRequestBuilder::fromInputs([], User::class);
+        $query = QueryBuilder::fromInputs([], User::class);
 
         $rawSql = $this->getRawSqlAccordingDriver('select * from "users" order by "name" asc, "first_name" asc');
         $this->assertEquals($rawSql, $query->toRawSql());
@@ -37,7 +34,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_request_only_model()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
         ]);
 
@@ -47,7 +44,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_request_default_sort_by_model_key()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'post',
         ]);
 
@@ -55,64 +52,11 @@ class EntityRequesterBuilderTest extends TestCase
         $this->assertEquals($rawSql, $query->toRawSql());
     }
 
-    public function test_build_entity_request_not_filtrable()
-    {
-        $this->expectException(NotFiltrableException::class);
-        $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        EntityRequestBuilder::fromInputs([
-            'model' => 'user',
-            'filter' => [
-                'type' => 'condition',
-                'property' => 'foo',
-                'value' => 'bar',
-            ],
-        ]);
-    }
-
-    public function test_build_entity_request_not_filtrable_relation()
-    {
-        $this->expectException(NotFiltrableException::class);
-        $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        EntityRequestBuilder::fromInputs([
-            'model' => 'user',
-            'filter' => [
-                'type' => 'relationship_condition',
-                'operator' => 'Has',
-                'property' => 'foo',
-            ],
-        ]);
-    }
-
-    public function test_build_entity_request_not_sortable()
-    {
-        $this->expectException(NotSortableException::class);
-        $this->expectExceptionMessage("Property 'foo' is not sortable");
-        EntityRequestBuilder::fromInputs([
-            'model' => 'user',
-            'sort' => [
-                ['property' => 'foo'],
-            ],
-        ]);
-    }
-
-    public function test_build_entity_request_not_scopable()
-    {
-        $this->expectException(NotScopableException::class);
-        $this->expectExceptionMessage("scope 'foobar' is not valid");
-        EntityRequestBuilder::fromInputs([
-            'model' => 'user',
-            'filter' => [
-                'type' => 'scope',
-                'name' => 'foobar',
-            ],
-        ]);
-    }
-
     public function test_build_entity_request_invalid_scope()
     {
         $this->expectException(InvalidScopeParametersException::class);
         $this->expectExceptionMessage("invalid 'foo' scope parameters");
-        EntityRequestBuilder::fromInputs([
+        QueryBuilder::fromInputs([
             'model' => 'user',
             'filter' => [
                 'type' => 'scope',
@@ -125,7 +69,7 @@ class EntityRequesterBuilderTest extends TestCase
     {
         $this->expectException(InvalidScopeParametersException::class);
         $this->expectExceptionMessage("invalid 'foo' scope parameters");
-        EntityRequestBuilder::fromInputs([
+        QueryBuilder::fromInputs([
             'model' => 'user',
             'filter' => [
                 'type' => 'scope',
@@ -143,7 +87,7 @@ class EntityRequesterBuilderTest extends TestCase
         $entityRequest = new EntityRequest(null, User::class);
         $entityRequest->setFilter(new Condition('email', $operator, 'gmail'));
 
-        $query = EntityRequestBuilder::fromEntityRequest($entityRequest);
+        $query = QueryBuilder::fromEntityRequest($entityRequest);
 
         $sql = 'select * from "users" where "users"."email"::text '.$operator->value.' ? order by "name" asc, "first_name" asc';
         $this->assertEquals($sql, $query->toSql());
@@ -159,40 +103,12 @@ class EntityRequesterBuilderTest extends TestCase
 
         $this->expectException(NotSupportedOperatorException::class);
         $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, IN, NOT IN, LIKE, NOT LIKE]");
-        EntityRequestBuilder::fromEntityRequest($entityRequest);
-    }
-
-    public function test_build_entity_request_relationship_sort_not_sortable_relation()
-    {
-        $this->expectException(NotSortableException::class);
-        $this->expectExceptionMessage("Property 'foo' is not sortable");
-        $query = EntityRequestBuilder::fromInputs([
-            'model' => 'user',
-            'sort' => [
-                [
-                    'property' => 'foo.bar',
-                ],
-            ],
-        ]);
-    }
-
-    public function test_build_entity_request_relationship_sort_not_sortable_property()
-    {
-        $this->expectException(NotSortableException::class);
-        $this->expectExceptionMessage("Property 'foo' is not sortable");
-        $query = EntityRequestBuilder::fromInputs([
-            'model' => 'user',
-            'sort' => [
-                [
-                    'property' => 'posts.foo',
-                ],
-            ],
-        ]);
+        QueryBuilder::fromEntityRequest($entityRequest);
     }
 
     public function test_build_entity_request_valid()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -287,7 +203,7 @@ class EntityRequesterBuilderTest extends TestCase
     public function test_build_entity_request_condition_operators(bool $and)
     {
         $operator = $and ? 'and' : 'or';
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -398,7 +314,7 @@ class EntityRequesterBuilderTest extends TestCase
             return;
         }
 
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -428,7 +344,7 @@ class EntityRequesterBuilderTest extends TestCase
     {
         Purchase::factory()->for(User::factory(), 'buyer')->create();
 
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'purchase',
             'filter' => [
                 'type' => 'relationship_condition',
@@ -459,7 +375,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_one_or_many_sort_with_filter()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -504,7 +420,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_belongs_to_sort_simple()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'post',
             'sort' => [
                 [
@@ -527,7 +443,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_belongs_to_sort_complex()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'post',
             'sort' => [
                 [
@@ -554,7 +470,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_has_one_or_many_sort_simple()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -579,7 +495,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_has_one_or_many_sort_complex()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -604,7 +520,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_one_or_many_sort_simple()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -630,7 +546,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_one_or_many_sort_complex()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -660,7 +576,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_belongs_to_many_sort_simple()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -687,7 +603,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_belongs_to_many_sort_complex()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -718,7 +634,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_to_many_sort_simple()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'post',
             'sort' => [
                 [
@@ -746,7 +662,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_to_many_sort_complex()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'post',
             'sort' => [
                 [
@@ -773,7 +689,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morphed_by_many_sort_simple()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'tag',
             'sort' => [
                 [
@@ -808,7 +724,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morphed_by_many_sort_complex()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'tag',
             'sort' => [
                 [
@@ -839,7 +755,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_has_many_through_sort_simple()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -873,7 +789,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_relationship_has_many_through_sort_complex()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -905,7 +821,7 @@ class EntityRequesterBuilderTest extends TestCase
     public function test_build_entity_relationship_morph_to_sort()
     {
         $this->expectExceptionMessage('MorphTo relations not managed for sorting');
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'purchase',
             'sort' => [
                 [
@@ -918,7 +834,7 @@ class EntityRequesterBuilderTest extends TestCase
     public function test_build_entity_relationship_missing_arragration()
     {
         $this->expectExceptionMessage('Invalid "to many" sort on property \'friends.id\', it must have aggregation function');
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -930,7 +846,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_sort_nested_relations_without_subquery()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [
@@ -965,7 +881,7 @@ class EntityRequesterBuilderTest extends TestCase
 
     public function test_build_entity_sort_nested_relations_with_subquery()
     {
-        $query = EntityRequestBuilder::fromInputs([
+        $query = QueryBuilder::fromInputs([
             'model' => 'user',
             'sort' => [
                 [

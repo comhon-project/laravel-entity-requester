@@ -77,17 +77,5 @@
                 }
             ]
         }
-    ],
-    "request": {
-        "filtrable": {
-            "properties": [
-                "id",
-                "email",
-                "first_name",
-                "property_doesnt_exist"
-            ],
-            "scopes": ["foo", "locked_scope"]
-        },
-        "sortable": ["id", "email", "property_doesnt_exist"]
-    }
+    ]
 }

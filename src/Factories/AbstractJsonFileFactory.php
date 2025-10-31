@@ -1,12 +1,11 @@
 <?php
 
-namespace Comhon\EntityRequester\Schema;
+namespace Comhon\EntityRequester\Factories;
 
 use Comhon\EntityRequester\Exceptions\SchemaNotFoundException;
 use Comhon\EntityRequester\Facades\EntityRequester;
 use Comhon\EntityRequester\Interfaces\CacheableInterface;
 use Comhon\EntityRequester\Interfaces\ResponsableInterface;
-use Comhon\EntityRequester\Interfaces\SchemaFactoryInterface;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use Illuminate\Cache\Repository;
 use Illuminate\Cache\TaggableStore;
@@ -14,26 +13,32 @@ use Illuminate\Cache\TaggedCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 
-class SchemaFactory implements CacheableInterface, ResponsableInterface, SchemaFactoryInterface
+abstract class AbstractJsonFileFactory implements CacheableInterface, ResponsableInterface
 {
-    private array $schemas = [];
+    private array $collection = [];
 
     private Repository $cache;
 
-    public function get(string $id): Schema
-    {
-        if (! isset($this->schemas[$id])) {
-            $loader = function () use ($id) {
-                $schema = json_decode($this->getJson($id), true);
+    abstract protected function getName(): string;
 
-                return new Schema($schema);
+    abstract protected function instanciate(array $data): object;
+
+    abstract protected function getDirectory(): string;
+
+    public function get(string $id): object
+    {
+        if (! isset($this->collection[$id])) {
+            $loader = function () use ($id) {
+                $data = json_decode($this->getJson($id), true);
+
+                return $this->instanciate($data);
             };
-            $this->schemas[$id] = EntityRequester::useCache()
-                ? $this->getCache()->rememberForever('entity-requester::schema-object::'.$id, $loader)
+            $this->collection[$id] = EntityRequester::useCache()
+                ? $this->getCache()->rememberForever("entity-requester::{$this->getName()}-object::{$id}", $loader)
                 : $loader();
         }
 
-        return $this->schemas[$id];
+        return $this->collection[$id];
     }
 
     public function getJson(string $id): string
@@ -50,12 +55,12 @@ class SchemaFactory implements CacheableInterface, ResponsableInterface, SchemaF
             try {
                 return file_get_contents($this->getPath($id));
             } catch (\Throwable $th) {
-                throw new SchemaNotFoundException($id);
+                throw new SchemaNotFoundException($this->getName(), $id);
             }
         };
 
         return EntityRequester::useCache()
-            ? $this->getCache()->rememberForever('entity-requester::schema-json::'.$id, $loader)
+            ? $this->getCache()->rememberForever("entity-requester::{$this->getName()}-json::{$id}", $loader)
             : $loader();
     }
 
@@ -73,12 +78,12 @@ class SchemaFactory implements CacheableInterface, ResponsableInterface, SchemaF
     public function refresh(?string $id = null): void
     {
         if ($id !== null) {
-            $this->getCache()->forget('entity-requester::schema-object::'.$id);
-            $this->getCache()->forget('entity-requester::schema-json::'.$id);
+            $this->getCache()->forget("entity-requester::{$this->getName()}-object::{$id}");
+            $this->getCache()->forget("entity-requester::{$this->getName()}-json::{$id}");
         } elseif ($this->getCache() instanceof TaggedCache) {
             $this->getCache()->flush();
         } else {
-            throw new \Exception('cannot flush all schemas from cache, cache driver must manage tags');
+            throw new \Exception('cannot flush entity requester cache, cache driver must manage tags');
         }
     }
 
@@ -89,15 +94,15 @@ class SchemaFactory implements CacheableInterface, ResponsableInterface, SchemaF
     {
         if (! isset($this->cache)) {
             $this->cache = Cache::getStore() instanceof TaggableStore
-                ? Cache::tags(['entity-requester::schema'])
+                ? Cache::tags(["entity-requester::{$this->getName()}"])
                 : Cache::store();
         }
 
         return $this->cache;
     }
 
-    private function getPath(string $id): string
+    public function getPath(string $id): string
     {
-        return EntityRequester::getSchemaDirectory().DIRECTORY_SEPARATOR.$id.'.json';
+        return $this->getDirectory().DIRECTORY_SEPARATOR.$id.'.json';
     }
 }

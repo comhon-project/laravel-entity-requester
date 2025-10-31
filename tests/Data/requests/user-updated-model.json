@@ -1,0 +1,8 @@
+{
+    "id": "user",
+    "filtrable": {
+        "properties": ["email", "id", "posts"],
+        "scopes": ["foo", "bool", "locked_scope"]
+    },
+    "sortable": ["id"]
+}

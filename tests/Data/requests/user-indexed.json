@@ -1,0 +1,55 @@
+{
+    "id": "user",
+    "filtrable": {
+        "properties": {
+            "id": "id",
+            "email": "email",
+            "first_name": "first_name",
+            "preferred_locale": "preferred_locale",
+            "birth_date": "birth_date",
+            "birth_day": "birth_day",
+            "birth_hour": "birth_hour",
+            "age": "age",
+            "score": "score",
+            "comment": "comment",
+            "status": "status",
+            "favorite_fruits": "favorite_fruits",
+            "has_consumer_ability": "has_consumer_ability",
+            "email_verified_at": "email_verified_at",
+            "posts": "posts",
+            "publicPosts": "publicPosts",
+            "friends": "friends",
+            "purchases": "purchases",
+            "childrenPosts": "childrenPosts"
+        },
+        "scopes": {
+            "validated": "validated",
+            "age": "age",
+            "bool": "bool",
+            "carbon": "carbon",
+            "dateTime": "dateTime",
+            "foo": "foo",
+            "resolvable": "resolvable"
+        }
+    },
+    "sortable": {
+        "id": "id",
+        "email": "email",
+        "preferred_locale": "preferred_locale",
+        "birth_date": "birth_date",
+        "birth_day": "birth_day",
+        "birth_hour": "birth_hour",
+        "age": "age",
+        "score": "score",
+        "comment": "comment",
+        "status": "status",
+        "favorite_fruits": "favorite_fruits",
+        "has_consumer_ability": "has_consumer_ability",
+        "email_verified_at": "email_verified_at",
+        "posts": "posts",
+        "publicPosts": "publicPosts",
+        "friends": "friends",
+        "purchases": "purchases",
+        "childrenPosts": "childrenPosts"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "properties": [
+        "first_name",
+        "posts",
+        "locked_property"
+    ],
+    "scopes": [
+        "foo",
+        "locked_scope"
+    ]
+}

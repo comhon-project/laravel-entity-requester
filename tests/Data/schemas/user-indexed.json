@@ -1,68 +1,68 @@
 {
     "id": "user",
     "name": "user",
-    "properties": [
-        {
+    "properties": {
+        "id": {
             "id": "id",
             "type": "integer",
             "nullable": false
         },
-        {
+        "email": {
             "id": "email",
             "type": "string",
             "nullable": false
         },
-        {
+        "password": {
             "id": "password",
             "type": "string",
             "nullable": false
         },
-        {
+        "name": {
             "id": "name",
             "type": "string",
             "nullable": false
         },
-        {
+        "first_name": {
             "id": "first_name",
-            "type": "float",
-            "nullable": true
+            "type": "string",
+            "nullable": false
         },
-        {
+        "preferred_locale": {
             "id": "preferred_locale",
             "type": "string",
             "nullable": true
         },
-        {
+        "birth_date": {
             "id": "birth_date",
             "type": "datetime",
             "nullable": true
         },
-        {
+        "birth_day": {
             "id": "birth_day",
             "type": "date",
             "nullable": true
         },
-        {
+        "birth_hour": {
             "id": "birth_hour",
             "type": "time",
             "nullable": true
         },
-        {
+        "age": {
             "id": "age",
             "type": "integer",
             "nullable": true
         },
-        {
+        "score": {
             "id": "score",
             "type": "float",
             "nullable": true
         },
-        {
+        "comment": {
             "id": "comment",
             "type": "string",
             "nullable": true
         },
-        {
+        "status": {
             "id": "status",
             "type": "integer",
             "enum": {
@@ -72,7 +72,7 @@
             },
             "nullable": true
         },
-        {
+        "favorite_fruits": {
             "id": "favorite_fruits",
             "type": "array",
             "children": {
@@ -85,58 +85,55 @@
             },
             "nullable": true
         },
-        {
+        "has_consumer_ability": {
             "id": "has_consumer_ability",
             "type": "boolean",
             "nullable": false
         },
-        {
+        "email_verified_at": {
             "id": "email_verified_at",
             "type": "datetime",
             "nullable": true
         },
-        {
-            "id": "parent_id",
-            "type": "integer",
-            "nullable": true
-        },
-        {
-            "id": "locked_property",
-            "type": "float"
-        },
-        {
+        "posts": {
             "id": "posts",
             "type": "relationship",
             "relationship_type": "has_many",
             "model": "post"
         },
-        {
+        "publicPosts": {
+            "id": "publicPosts",
+            "type": "relationship",
+            "relationship_type": "has_many",
+            "model": "post"
+        },
+        "friends": {
             "id": "friends",
             "type": "relationship",
             "relationship_type": "belongs_to_many",
             "model": "user"
         },
-        {
+        "purchases": {
             "id": "purchases",
             "type": "relationship",
             "relationship_type": "morph_many",
             "model": "purchase"
         },
-        {
+        "childrenPosts": {
             "id": "childrenPosts",
             "type": "relationship",
             "relationship_type": "has_many_through",
             "model": "post"
         }
-    ],
+    },
     "unique_identifier": "id",
     "primary_identifiers": ["name", "first_name"],
-    "scopes": [
-        {
+    "scopes": {
+        "validated": {
             "id": "validated",
             "parameters": []
         },
-        {
+        "age": {
             "id": "age",
             "parameters": [
                 {
@@ -147,7 +144,7 @@
                 }
             ]
         },
-        {
+        "bool": {
             "id": "bool",
             "parameters": [
                 {
@@ -158,7 +155,7 @@
                 }
             ]
         },
-        {
+        "carbon": {
             "id": "carbon",
             "parameters": [
                 {
@@ -169,7 +166,7 @@
                 }
             ]
         },
-        {
+        "dateTime": {
             "id": "dateTime",
             "parameters": [
                 {
@@ -180,7 +177,7 @@
                 }
             ]
         },
-        {
+        "foo": {
             "id": "foo",
             "parameters": [
                 {
@@ -202,14 +199,13 @@
                     "enum": {
                         "apple": "apple",
                         "orange": "orange",
-                        "strawberry": "strawberry",
-                        "LOCKED": "locked"
+                        "strawberry": "strawberry"
                     },
                     "nullable": false
                 }
             ]
         },
-        {
+        "resolvable": {
             "id": "resolvable",
             "parameters": [
                 {
@@ -219,74 +215,7 @@
                     "nullable": false
                 }
             ]
-        },
-        {
-            "id": "locked_scope",
-            "parameters": [
-                {
-                    "id": "foo",
-                    "name": "foo",
-                    "type": "array",
-                    "children": { "type": "integer" }
-                }
-            ]
         }
-    ],
-    "request": {
-        "filtrable": {
-            "properties": [
-                "id",
-                "email",
-                "first_name",
-                "preferred_locale",
-                "birth_date",
-                "birth_day",
-                "birth_hour",
-                "age",
-                "score",
-                "comment",
-                "status",
-                "favorite_fruits",
-                "has_consumer_ability",
-                "email_verified_at",
-                "locked_property",
-                "parent_id",
-                "posts",
-                "friends",
-                "purchases",
-                "childrenPosts"
-            ],
-            "scopes": [
-                "validated",
-                "age",
-                "bool",
-                "carbon",
-                "dateTime",
-                "foo",
-                "resolvable",
-                "locked_scope"
-            ]
-        },
-        "sortable": [
-            "id",
-            "email",
-            "preferred_locale",
-            "birth_date",
-            "birth_day",
-            "birth_hour",
-            "age",
-            "score",
-            "comment",
-            "status",
-            "favorite_fruits",
-            "has_consumer_ability",
-            "email_verified_at",
-            "parent_id",
-            "locked_property",
-            "posts",
-            "friends",
-            "purchases",
-            "childrenPosts"
-        ]
-    }
+    },
+    "default_sort": [{ "property": "name" }, { "property": "first_name" }]
 }

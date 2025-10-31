@@ -1,0 +1,58 @@
+{
+    "id": "user",
+    "filtrable": {
+        "properties": [
+            "id",
+            "email",
+            "first_name",
+            "preferred_locale",
+            "birth_date",
+            "birth_day",
+            "birth_hour",
+            "age",
+            "score",
+            "comment",
+            "status",
+            "favorite_fruits",
+            "has_consumer_ability",
+            "email_verified_at",
+            "locked_property",
+            "parent_id",
+            "posts",
+            "friends",
+            "purchases",
+            "childrenPosts"
+        ],
+        "scopes": [
+            "validated",
+            "age",
+            "bool",
+            "carbon",
+            "dateTime",
+            "foo",
+            "resolvable",
+            "locked_scope"
+        ]
+    },
+    "sortable": [
+        "id",
+        "email",
+        "preferred_locale",
+        "birth_date",
+        "birth_day",
+        "birth_hour",
+        "age",
+        "score",
+        "comment",
+        "status",
+        "favorite_fruits",
+        "has_consumer_ability",
+        "email_verified_at",
+        "parent_id",
+        "locked_property",
+        "posts",
+        "friends",
+        "purchases",
+        "childrenPosts"
+    ]
+}

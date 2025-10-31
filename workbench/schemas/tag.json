@@ -32,12 +32,5 @@
             "id": "validated",
             "parameters": []
         }
-    ],
-    "request": {
-        "filtrable": {
-            "properties": ["name"],
-            "scopes": ["validated"]
-        },
-        "sortable": ["id", "name", "posts", "purchases"]
-    }
+    ]
 }

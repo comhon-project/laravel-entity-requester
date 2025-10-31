@@ -26,12 +26,5 @@
             "id": "validated",
             "parameters": []
         }
-    ],
-    "request": {
-        "filtrable": {
-            "properties": ["name"],
-            "scopes": ["validated"]
-        },
-        "sortable": ["name", "owner", "tags", "publicTags"]
-    }
+    ]
 }

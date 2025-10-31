@@ -1,0 +1,55 @@
+{
+    "id": "user",
+    "filtrable": {
+        "properties": [
+            "id",
+            "email",
+            "first_name",
+            "preferred_locale",
+            "birth_date",
+            "birth_day",
+            "birth_hour",
+            "age",
+            "score",
+            "comment",
+            "status",
+            "favorite_fruits",
+            "has_consumer_ability",
+            "email_verified_at",
+            "posts",
+            "publicPosts",
+            "friends",
+            "purchases",
+            "childrenPosts"
+        ],
+        "scopes": [
+            "validated",
+            "age",
+            "bool",
+            "carbon",
+            "dateTime",
+            "foo",
+            "resolvable"
+        ]
+    },
+    "sortable": [
+        "id",
+        "email",
+        "preferred_locale",
+        "birth_date",
+        "birth_day",
+        "birth_hour",
+        "age",
+        "score",
+        "comment",
+        "status",
+        "favorite_fruits",
+        "has_consumer_ability",
+        "email_verified_at",
+        "posts",
+        "publicPosts",
+        "friends",
+        "purchases",
+        "childrenPosts"
+    ]
+}
