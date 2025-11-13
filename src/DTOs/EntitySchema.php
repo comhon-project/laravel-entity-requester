@@ -2,7 +2,7 @@
 
 namespace Comhon\EntityRequester\DTOs;
 
-class Schema
+class EntitySchema
 {
     private array $data;
 

@@ -10,11 +10,11 @@ return [
     | determine in which directory schemas are stored
     | by default, files are stored in the "schemas" directory at the root of the project
     */
-    'schema_directory' => null,
+    'entity_schema_directory' => null,
 
     /*
     | determine in which directory request schemas are stored
     | by default, files are stored in the "requests" directory at the root of the project
     */
-    'request_shema_directory' => null,
+    'request_schema_directory' => null,
 ];

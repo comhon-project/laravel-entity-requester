@@ -7,9 +7,9 @@ use Comhon\EntityRequester\Database\Utils;
 use Comhon\EntityRequester\DTOs\AbstractCondition;
 use Comhon\EntityRequester\DTOs\Condition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
+use Comhon\EntityRequester\DTOs\EntitySchema;
 use Comhon\EntityRequester\DTOs\Group;
 use Comhon\EntityRequester\DTOs\RelationshipCondition;
-use Comhon\EntityRequester\DTOs\Schema;
 use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
@@ -17,7 +17,7 @@ use Comhon\EntityRequester\Enums\RelationshipConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
-use Comhon\EntityRequester\Interfaces\SchemaFactoryInterface;
+use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -35,7 +35,7 @@ use ReflectionMethod;
 
 class QueryBuilder
 {
-    public function __construct(private SchemaFactoryInterface $schemaFactory) {}
+    public function __construct(private EntitySchemaFactoryInterface $entitySchemaFactory) {}
 
     /**
      * transform given inputs to query builder
@@ -52,7 +52,7 @@ class QueryBuilder
     {
         $builder = app(static::class);
         $class = $entityRequest->getModelClass();
-        $schema = $builder->schemaFactory->get($class);
+        $schema = $builder->entitySchemaFactory->get($class);
 
         /** @var \Illuminate\Database\Eloquent\Builder $query */
         $query = $class::query();
@@ -68,7 +68,7 @@ class QueryBuilder
     private function addSort(Builder $query, ?array $sort = null)
     {
         $class = get_class($query->getModel());
-        $schema = $this->schemaFactory->get($class);
+        $schema = $this->entitySchemaFactory->get($class);
         if (! empty($sort)) {
             foreach ($sort as $sortElement) {
                 if (strpos($sortElement['property'], '.')) {
@@ -90,7 +90,7 @@ class QueryBuilder
      * @param  string  $table  if specified, column name will be prefixed by given table name
      */
     private function addFilter(
-        Schema $schema,
+        EntitySchema $schema,
         Builder|JoinClause $query,
         AbstractCondition $filter,
         bool $and = true,
@@ -110,7 +110,7 @@ class QueryBuilder
      * @param  string  $table  if specified, column name will be prefixed by given table name
      */
     private function addCondition(
-        Schema $schema,
+        EntitySchema $schema,
         Builder|JoinClause $query,
         Condition $condition,
         bool $and = true,
@@ -154,7 +154,7 @@ class QueryBuilder
      * @param  string  $table  if specified, column name will be prefixed by given table name
      */
     private function addGroup(
-        Schema $schema,
+        EntitySchema $schema,
         Builder|JoinClause $query,
         Group $group,
         bool $and,
@@ -173,7 +173,7 @@ class QueryBuilder
     }
 
     private function addRelationshipCondition(
-        Schema $schema,
+        EntitySchema $schema,
         Builder $query,
         RelationshipCondition $condition,
         bool $and,
@@ -200,7 +200,7 @@ class QueryBuilder
                     ? (Relation::getMorphedModel($type) ?? $type)
                     : get_class($relation->getRelated());
 
-                $schemaProperty = $this->schemaFactory->get($class);
+                $schemaProperty = $this->entitySchemaFactory->get($class);
                 $this->addFilter($schemaProperty, $subquery, $filter);
             }
         : null;
@@ -210,7 +210,7 @@ class QueryBuilder
             : $query->$callWhere($propertyId, $callback);
     }
 
-    private function addScope(Schema $schema, Builder $query, Scope $scope, bool $and)
+    private function addScope(EntitySchema $schema, Builder $query, Scope $scope, bool $and)
     {
         $scopeName = $scope->getName();
         try {
@@ -345,7 +345,7 @@ class QueryBuilder
         // the filter must be set on the subquery before doing the join
         // otherwise it is not taken in account
         if ($filter) {
-            $foreignSchema = $this->schemaFactory->get(get_class($relation->getRelated()));
+            $foreignSchema = $this->entitySchemaFactory->get(get_class($relation->getRelated()));
             $this->addFilter($foreignSchema, $eloquentSubQuery, $filter);
         }
 
@@ -372,7 +372,7 @@ class QueryBuilder
 
         if ($filter) {
             $relatedModel = $relation->getRelated();
-            $foreignSchema = $this->schemaFactory->get(get_class($relatedModel));
+            $foreignSchema = $this->entitySchemaFactory->get(get_class($relatedModel));
             $originalQueryModel = $query->getModel();
             $query->setModel($relatedModel);
             if ($this->hasFilterClass($filter, RelationshipCondition::class)) {

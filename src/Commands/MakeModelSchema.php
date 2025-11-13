@@ -703,7 +703,7 @@ class MakeModelSchema extends Command
 
     private function getSchemaPathWithoutExtension(Model $model)
     {
-        return EntityRequester::getSchemaDirectory().DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
+        return EntityRequester::getEntitySchemaDirectory().DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
     }
 
     private function getRequestSchemaPath(Model $model)

@@ -83,7 +83,7 @@ abstract class AbstractJsonFileFactory implements CacheableInterface, Responsabl
         } elseif ($this->getCache() instanceof TaggedCache) {
             $this->getCache()->flush();
         } else {
-            throw new \Exception('cannot flush entity requester cache, cache driver must manage tags');
+            throw new \Exception('cannot flush cache, cache driver must manage tags');
         }
     }
 

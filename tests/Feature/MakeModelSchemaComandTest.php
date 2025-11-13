@@ -31,14 +31,14 @@ class MakeModelSchemaComandTest extends TestCase
         }
 
         config([
-            'entity-requester.schema_directory' => $schemaDir,
-            'entity-requester.request_shema_directory' => $requestDir,
+            'entity-requester.entity_schema_directory' => $schemaDir,
+            'entity-requester.request_schema_directory' => $requestDir,
         ]);
     }
 
     private function getSchemaPath(string $filename): string
     {
-        return EntityRequester::getSchemaDirectory().DIRECTORY_SEPARATOR.$filename;
+        return EntityRequester::getEntitySchemaDirectory().DIRECTORY_SEPARATOR.$filename;
     }
 
     private function getRequestSchemaPath(string $filename): string
@@ -46,7 +46,7 @@ class MakeModelSchemaComandTest extends TestCase
         return EntityRequester::getRequestSchemaDirectory().DIRECTORY_SEPARATOR.$filename;
     }
 
-    private function getExpectedSchemaPath(string $fileName)
+    private function getExpectedEntitySchemaPath(string $fileName)
     {
         $filePath = $this->getDataFilePath('schemas/'.$fileName);
         if (! class_exists(Scope::class)) {
@@ -114,7 +114,7 @@ class MakeModelSchemaComandTest extends TestCase
 
     private function copyUserSchemaFiles()
     {
-        mkdir(EntityRequester::getSchemaDirectory());
+        mkdir(EntityRequester::getEntitySchemaDirectory());
         copy(
             $this->getDataFilePath('schemas/user-partial.json'),
             $this->getSchemaPath('user.json')
@@ -135,7 +135,7 @@ class MakeModelSchemaComandTest extends TestCase
         );
     }
 
-    public function assertShemaStringEqualsShemaString(string $schema1, string $schema2)
+    public function assertSchemaStringEqualsSchemaString(string $schema1, string $schema2)
     {
         $schemas = [
             json_decode($schema1, true),
@@ -159,17 +159,17 @@ class MakeModelSchemaComandTest extends TestCase
         $this->assertEquals($schemas[0], $schemas[1]);
     }
 
-    public function assertShemaStringEqualsShemaFile(string $path, string $schema)
+    public function assertSchemaStringEqualsSchemaFile(string $path, string $schema)
     {
-        $this->assertShemaStringEqualsShemaString(
+        $this->assertSchemaStringEqualsSchemaString(
             file_get_contents($path),
             $schema,
         );
     }
 
-    public function assertShemaFileEqualsShemaFile(string $path1, string $path2)
+    public function assertSchemaFileEqualsSchemaFile(string $path1, string $path2)
     {
-        $this->assertShemaStringEqualsShemaString(
+        $this->assertSchemaStringEqualsSchemaString(
             file_get_contents($path1),
             file_get_contents($path2),
         );
@@ -195,12 +195,12 @@ class MakeModelSchemaComandTest extends TestCase
         $this->assertFileExists($this->getSchemaPath('user.json'));
         $json = file_get_contents($this->getSchemaPath('user.json'));
         $this->assertEquals($pretty, str_contains($json, "\n"));
-        $this->assertShemaStringEqualsShemaFile($this->getExpectedSchemaPath('user.json'), $json);
+        $this->assertSchemaStringEqualsSchemaFile($this->getExpectedEntitySchemaPath('user.json'), $json);
 
         $this->assertFileExists($this->getRequestSchemaPath('user.json'));
         $json = file_get_contents($this->getRequestSchemaPath('user.json'));
         $this->assertEquals($pretty, str_contains($json, "\n"));
-        $this->assertShemaStringEqualsShemaFile($this->getExpectedRequestSchemaPath('user.json'), $json);
+        $this->assertSchemaStringEqualsSchemaFile($this->getExpectedRequestSchemaPath('user.json'), $json);
     }
 
     public function test_create_model_schema_full_name_space_success()
@@ -245,7 +245,7 @@ class MakeModelSchemaComandTest extends TestCase
             }
             EOT;
 
-        $this->assertShemaStringEqualsShemaString($expected, $json);
+        $this->assertSchemaStringEqualsSchemaString($expected, $json);
     }
 
     public function test_create_model_schema_with_morph_to_relation_success()
@@ -305,7 +305,7 @@ class MakeModelSchemaComandTest extends TestCase
             }
             EOT;
 
-        $this->assertShemaStringEqualsShemaString($expected, $json);
+        $this->assertSchemaStringEqualsSchemaString($expected, $json);
     }
 
     #[DataProvider('providerFiltrableOptions')]
@@ -321,7 +321,7 @@ class MakeModelSchemaComandTest extends TestCase
             file_get_contents($this->getExpectedRequestSchemaPath('user.json')),
         );
 
-        $this->assertShemaStringEqualsShemaString($expected, $json);
+        $this->assertSchemaStringEqualsSchemaString($expected, $json);
     }
 
     public static function providerFiltrableOptions()
@@ -403,7 +403,7 @@ class MakeModelSchemaComandTest extends TestCase
             file_get_contents($this->getExpectedRequestSchemaPath('user.json')),
         );
 
-        $this->assertShemaStringEqualsShemaString($expected, $json);
+        $this->assertSchemaStringEqualsSchemaString($expected, $json);
     }
 
     public static function providerSortableOptions()
@@ -490,7 +490,7 @@ class MakeModelSchemaComandTest extends TestCase
             file_get_contents($this->getExpectedRequestSchemaPath('user.json')),
         );
 
-        $this->assertShemaStringEqualsShemaString($expected, $json);
+        $this->assertSchemaStringEqualsSchemaString($expected, $json);
     }
 
     public static function providerScopableOptions()
@@ -536,12 +536,12 @@ class MakeModelSchemaComandTest extends TestCase
 
         $filename = $fresh ? 'user.json' : 'user-updated-all.json';
 
-        $this->assertShemaFileEqualsShemaFile(
-            $this->getExpectedSchemaPath($filename),
+        $this->assertSchemaFileEqualsSchemaFile(
+            $this->getExpectedEntitySchemaPath($filename),
             $this->getSchemaPath('user.json')
         );
 
-        $this->assertShemaFileEqualsShemaFile(
+        $this->assertSchemaFileEqualsSchemaFile(
             $this->getExpectedRequestSchemaPath($filename),
             $this->getRequestSchemaPath('user.json')
         );
@@ -559,11 +559,11 @@ class MakeModelSchemaComandTest extends TestCase
 
         $filename = 'user-updated-model.json';
 
-        $this->assertShemaFileEqualsShemaFile(
-            $this->getExpectedSchemaPath($filename),
+        $this->assertSchemaFileEqualsSchemaFile(
+            $this->getExpectedEntitySchemaPath($filename),
             $this->getSchemaPath('user.json')
         );
-        $this->assertShemaFileEqualsShemaFile(
+        $this->assertSchemaFileEqualsSchemaFile(
             $this->getExpectedRequestSchemaPath($filename),
             $this->getRequestSchemaPath('user.json')
         );

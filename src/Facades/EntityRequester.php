@@ -5,10 +5,12 @@ namespace Comhon\EntityRequester\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static string getSchemaDirectory()
+ * @method static string getEntitySchemaDirectory()
  * @method static string getRequestSchemaDirectory()
  * @method static bool useCache()
- * @method static void refreshCache(?string $schemaId = null)
+ * @method static void refreshCache()
+ * @method static void refreshEntityCache(?string $schemaId = null)
+ * @method static void refreshRequestCache(?string $schemaId = null)
  *
  * @see \Comhon\EntityRequester\EntityRequester
  */

@@ -3,37 +3,37 @@
 namespace Tests\Feature\Feature;
 
 use App\Models\User;
-use Comhon\EntityRequester\DTOs\Schema;
+use Comhon\EntityRequester\DTOs\EntitySchema;
 use Comhon\EntityRequester\Exceptions\SchemaNotFoundException;
 use Comhon\EntityRequester\Facades\EntityRequester;
-use Comhon\EntityRequester\Factories\SchemaFactory;
-use Comhon\EntityRequester\Interfaces\SchemaFactoryInterface;
+use Comhon\EntityRequester\Factories\EntitySchemaFactory;
+use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Illuminate\Cache\Repository;
 use Illuminate\Cache\TaggedCache;
 use Illuminate\Http\JsonResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
-class SchemaFactoryTest extends TestCase
+class EntitySchemaFactoryTest extends TestCase
 {
     private function getSchemaPath(string $id): string
     {
-        return EntityRequester::getSchemaDirectory().DIRECTORY_SEPARATOR.$id.'.json';
+        return EntityRequester::getEntitySchemaDirectory().DIRECTORY_SEPARATOR.$id.'.json';
     }
 
     private function getSchemaUserCacheKey(bool $json): string
     {
-        return 'entity-requester::schema-'.($json ? 'json' : 'object').'::user';
+        return 'entity-requester::entity-'.($json ? 'json' : 'object').'::user';
     }
 
     private function getSchemaCacheKey(string $id, bool $json): string
     {
-        return 'entity-requester::schema-'.($json ? 'json' : 'object').'::'.$id;
+        return 'entity-requester::entity-'.($json ? 'json' : 'object').'::'.$id;
     }
 
     private function getTaggedCache(): Repository
     {
-        return app(SchemaFactory::class)->getCache();
+        return app(EntitySchemaFactory::class)->getCache();
     }
 
     private function getDataFilePath(string $fileName)
@@ -47,9 +47,9 @@ class SchemaFactoryTest extends TestCase
     public function test_get_schema(bool $fromClass)
     {
         $id = $fromClass ? User::class : 'user';
-        $schema = app(SchemaFactoryInterface::class)->get($id);
+        $schema = app(EntitySchemaFactoryInterface::class)->get($id);
 
-        $this->assertInstanceOf(Schema::class, $schema);
+        $this->assertInstanceOf(EntitySchema::class, $schema);
         $this->assertEquals(
             json_decode(file_get_contents($this->getDataFilePath('schemas/user-indexed.json')), true),
             $schema->getData()
@@ -60,7 +60,7 @@ class SchemaFactoryTest extends TestCase
 
     public function test_get_schema_json()
     {
-        $schema = app(SchemaFactory::class)->getJson('user');
+        $schema = app(EntitySchemaFactory::class)->getJson('user');
 
         $this->assertJsonStringEqualsJsonFile($this->getSchemaPath('user'), $schema);
         $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
@@ -73,9 +73,9 @@ class SchemaFactoryTest extends TestCase
         $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
         $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
 
-        $schema = app(SchemaFactoryInterface::class)->get('user');
+        $schema = app(EntitySchemaFactoryInterface::class)->get('user');
 
-        $this->assertInstanceOf(Schema::class, $schema);
+        $this->assertInstanceOf(EntitySchema::class, $schema);
         $this->assertEquals(
             json_decode(file_get_contents($this->getDataFilePath('schemas/user-indexed.json')), true),
             $schema->getData()
@@ -84,9 +84,9 @@ class SchemaFactoryTest extends TestCase
         $this->assertTrue($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
 
         // test retrieve schema from cache
-        $schema = app(SchemaFactoryInterface::class)->get('user');
+        $schema = app(EntitySchemaFactoryInterface::class)->get('user');
 
-        $this->assertInstanceOf(Schema::class, $schema);
+        $this->assertInstanceOf(EntitySchema::class, $schema);
         $this->assertEquals(
             json_decode(file_get_contents($this->getDataFilePath('schemas/user-indexed.json')), true),
             $schema->getData()
@@ -99,22 +99,22 @@ class SchemaFactoryTest extends TestCase
         $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
         $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
 
-        $schema = app(SchemaFactory::class)->getJson('user');
+        $schema = app(EntitySchemaFactory::class)->getJson('user');
 
         $this->assertJsonStringEqualsJsonFile($this->getSchemaPath('user'), $schema);
         $this->assertTrue($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
         $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
 
         // test retrieve schema from cache
-        $schema = app(SchemaFactory::class)->getJson('user');
+        $schema = app(EntitySchemaFactory::class)->getJson('user');
         $this->assertJsonStringEqualsJsonFile($this->getSchemaPath('user'), $schema);
     }
 
     public function test_flush_all_schemas_success()
     {
         config(['entity-requester.use_cache' => true]);
-        app(SchemaFactory::class)->get('user');
-        app(SchemaFactory::class)->get('visible');
+        app(EntitySchemaFactory::class)->get('user');
+        app(EntitySchemaFactory::class)->get('visible');
         $cache = $this->getTaggedCache();
 
         $this->assertInstanceOf(TaggedCache::class, $cache);
@@ -124,7 +124,7 @@ class SchemaFactoryTest extends TestCase
         $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', false)));
         $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', true)));
 
-        EntityRequester::refreshCache();
+        EntityRequester::refreshEntityCache();
 
         $this->assertFalse($cache->has($this->getSchemaCacheKey('user', false)));
         $this->assertFalse($cache->has($this->getSchemaCacheKey('user', true)));
@@ -138,14 +138,14 @@ class SchemaFactoryTest extends TestCase
         config(['entity-requester.use_cache' => true]);
 
         $this->expectExceptionMessage('cache driver must manage tags');
-        EntityRequester::refreshCache();
+        EntityRequester::refreshEntityCache();
     }
 
     public function test_flush_one_schemas()
     {
         config(['entity-requester.use_cache' => true]);
-        app(SchemaFactory::class)->get('user');
-        app(SchemaFactory::class)->get('visible');
+        app(EntitySchemaFactory::class)->get('user');
+        app(EntitySchemaFactory::class)->get('visible');
         $cache = $this->getTaggedCache();
 
         $this->assertTrue($cache->has($this->getSchemaCacheKey('user', false)));
@@ -153,7 +153,7 @@ class SchemaFactoryTest extends TestCase
         $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', false)));
         $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', true)));
 
-        EntityRequester::refreshCache('user');
+        EntityRequester::refreshEntityCache('user');
 
         $this->assertFalse($cache->has($this->getSchemaCacheKey('user', false)));
         $this->assertFalse($cache->has($this->getSchemaCacheKey('user', true)));
@@ -163,7 +163,7 @@ class SchemaFactoryTest extends TestCase
 
     public function test_get_schema_response()
     {
-        $response = app(SchemaFactory::class)->response('user', request());
+        $response = app(EntitySchemaFactory::class)->response('user', request());
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertStringContainsString('"id": "user"', $response->getContent());
     }
@@ -171,13 +171,13 @@ class SchemaFactoryTest extends TestCase
     public function test_get_schema_not_found()
     {
         $this->expectException(SchemaNotFoundException::class);
-        $this->expectExceptionMessage("schema 'foo' not found");
-        app(SchemaFactoryInterface::class)->get('foo');
+        $this->expectExceptionMessage("entity 'foo' not found");
+        app(EntitySchemaFactoryInterface::class)->get('foo');
     }
 
     public function test_get_schema_unique_name_doesnt_exist()
     {
         $this->expectExceptionMessage("model  doesn't have unique name");
-        app(SchemaFactoryInterface::class)->get('App\Models\MyModel');
+        app(EntitySchemaFactoryInterface::class)->get('App\Models\MyModel');
     }
 }
