@@ -7,14 +7,14 @@ return [
     'use_cache' => false,
 
     /*
-    | determine in which directory shchemas are stored
+    | determine in which directory schemas are stored
     | by default, files are stored in the "schemas" directory at the root of the project
     */
     'schema_directory' => null,
 
     /*
-    | determine in which directory request accesses are stored
+    | determine in which directory request schemas are stored
     | by default, files are stored in the "requests" directory at the root of the project
     */
-    'request_access_directory' => null,
+    'request_shema_directory' => null,
 ];

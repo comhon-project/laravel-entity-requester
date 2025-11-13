@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static string getSchemaDirectory()
- * @method static string getRequestAccessDirectory()
+ * @method static string getRequestSchemaDirectory()
  * @method static bool useCache()
  * @method static void refreshCache(?string $schemaId = null)
  *

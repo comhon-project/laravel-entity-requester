@@ -7,16 +7,16 @@ use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
-use Comhon\EntityRequester\Facades\AccessValidator;
+use Comhon\EntityRequester\Facades\Gate;
 use Tests\TestCase;
 
-class AcessValidatorTest extends TestCase
+class RequestGateTest extends TestCase
 {
-    public function test_access_validator_not_filtrable()
+    public function test_authorize_not_filtrable()
     {
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        AccessValidator::validate(new EntityRequest([
+        Gate::authorize(new EntityRequest([
             'model' => 'user',
             'filter' => [
                 'type' => 'condition',
@@ -26,11 +26,11 @@ class AcessValidatorTest extends TestCase
         ]));
     }
 
-    public function test_access_validator_not_filtrable_relation()
+    public function test_authorize_not_filtrable_relation()
     {
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        AccessValidator::validate(new EntityRequest([
+        Gate::authorize(new EntityRequest([
             'model' => 'user',
             'filter' => [
                 'type' => 'relationship_condition',
@@ -40,11 +40,11 @@ class AcessValidatorTest extends TestCase
         ]));
     }
 
-    public function test_access_validator_not_sortable()
+    public function test_authorize_not_sortable()
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
-        AccessValidator::validate(new EntityRequest([
+        Gate::authorize(new EntityRequest([
             'model' => 'user',
             'sort' => [
                 ['property' => 'foo'],
@@ -52,11 +52,11 @@ class AcessValidatorTest extends TestCase
         ]));
     }
 
-    public function test_access_validator_not_scopable()
+    public function test_authorize_not_scopable()
     {
         $this->expectException(NotScopableException::class);
         $this->expectExceptionMessage("scope 'foobar' is not valid");
-        AccessValidator::validate(new EntityRequest([
+        Gate::authorize(new EntityRequest([
             'model' => 'user',
             'filter' => [
                 'type' => 'scope',
@@ -65,11 +65,11 @@ class AcessValidatorTest extends TestCase
         ]));
     }
 
-    public function test_access_validator_relationship_sort_not_sortable_relation()
+    public function test_authorize_relationship_sort_not_sortable_relation()
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
-        AccessValidator::validate(new EntityRequest([
+        Gate::authorize(new EntityRequest([
             'model' => 'user',
             'sort' => [
                 [
@@ -79,11 +79,11 @@ class AcessValidatorTest extends TestCase
         ]));
     }
 
-    public function test_access_validator_relationship_sort_not_sortable_property()
+    public function test_authorize_relationship_sort_not_sortable_property()
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
-        AccessValidator::validate(new EntityRequest([
+        Gate::authorize(new EntityRequest([
             'model' => 'user',
             'sort' => [
                 [
@@ -93,9 +93,9 @@ class AcessValidatorTest extends TestCase
         ]));
     }
 
-    public function test_access_validator_valid()
+    public function test_authorize_valid()
     {
-        AccessValidator::validate(new EntityRequest([
+        Gate::authorize(new EntityRequest([
             'model' => 'user',
             'filter' => [
                 'type' => 'group',

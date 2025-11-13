@@ -11,31 +11,31 @@ use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
-use Comhon\EntityRequester\Interfaces\AccessValidatorInterface;
-use Comhon\EntityRequester\Interfaces\RequestAccessFactoryInterface;
+use Comhon\EntityRequester\Interfaces\RequestGateInterface;
+use Comhon\EntityRequester\Interfaces\RequestSchemaFactoryInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
-class AccessValidator implements AccessValidatorInterface
+class Gate implements RequestGateInterface
 {
-    public function __construct(private RequestAccessFactoryInterface $requestAccessFactory) {}
+    public function __construct(private RequestSchemaFactoryInterface $requestSchemaFactory) {}
 
     /**
-     * validate access of each referenced properties in entity request
+     * verify if entity request is authorized
      */
-    public function validate(EntityRequest $entityRequest)
+    public function authorize(EntityRequest $entityRequest)
     {
-        $this->validateSort($entityRequest);
+        $this->authorizeSort($entityRequest);
 
         if ($entityRequest->getFilter()) {
             $class = $entityRequest->getModelClass();
             $model = new $class;
-            $this->validateFilter($model, $entityRequest->getFilter());
+            $this->authorizeFilter($model, $entityRequest->getFilter());
         }
     }
 
-    private function validateSort(EntityRequest $entityRequest)
+    private function authorizeSort(EntityRequest $entityRequest)
     {
         if (empty($entityRequest->getSort())) {
             return;
@@ -44,50 +44,50 @@ class AccessValidator implements AccessValidatorInterface
         $model = new $class;
         foreach ($entityRequest->getSort() as $sortElement) {
             if (strpos($sortElement['property'], '.')) {
-                $this->validateRelationshipSort($model, $sortElement);
+                $this->authorizeRelationshipSort($model, $sortElement);
             } else {
-                $access = $this->requestAccessFactory->get($class);
-                if (! $access->isSortable($sortElement['property'])) {
+                $requestSchema = $this->requestSchemaFactory->get($class);
+                if (! $requestSchema->isSortable($sortElement['property'])) {
                     throw new NotSortableException($sortElement['property']);
                 }
             }
         }
     }
 
-    private function validateFilter(Model $model, AbstractCondition $filter)
+    private function authorizeFilter(Model $model, AbstractCondition $filter)
     {
         match (get_class($filter)) {
-            Condition::class => $this->validateCondition($model, $filter),
-            Group::class => $this->validateGroup($model, $filter),
-            Scope::class => $this->validateScope($model, $filter),
-            RelationshipCondition::class => $this->validateRelationshipCondition($model, $filter),
+            Condition::class => $this->authorizeCondition($model, $filter),
+            Group::class => $this->authorizeGroup($model, $filter),
+            Scope::class => $this->authorizeScope($model, $filter),
+            RelationshipCondition::class => $this->authorizeRelationshipCondition($model, $filter),
         };
     }
 
-    private function validateCondition(Model $model, Condition $condition)
+    private function authorizeCondition(Model $model, Condition $condition)
     {
         $propertyId = $condition->getProperty();
-        $access = $this->requestAccessFactory->get(get_class($model));
+        $requestSchema = $this->requestSchemaFactory->get(get_class($model));
 
-        if (! $access->isFiltrable($propertyId)) {
+        if (! $requestSchema->isFiltrable($propertyId)) {
             throw new NotFiltrableException($propertyId);
         }
     }
 
-    private function validateGroup(Model $model, Group $group)
+    private function authorizeGroup(Model $model, Group $group)
     {
         foreach ($group->getConditions() as $condition) {
-            $this->validateFilter($model, $condition);
+            $this->authorizeFilter($model, $condition);
         }
     }
 
-    private function validateRelationshipCondition(Model $model, RelationshipCondition $condition)
+    private function authorizeRelationshipCondition(Model $model, RelationshipCondition $condition)
     {
         $propertyId = $condition->getProperty();
         $filter = $condition->getFilter();
 
-        $access = $this->requestAccessFactory->get(get_class($model));
-        if (! $access->isFiltrable($propertyId)) {
+        $requestSchema = $this->requestSchemaFactory->get(get_class($model));
+        if (! $requestSchema->isFiltrable($propertyId)) {
             throw new NotFiltrableException($propertyId);
         }
 
@@ -102,21 +102,21 @@ class AccessValidator implements AccessValidatorInterface
                 : [$relation->getRelated()];
 
             foreach ($models as $model) {
-                $this->validateFilter($model, $filter);
+                $this->authorizeFilter($model, $filter);
             }
         }
     }
 
-    private function validateScope(Model $model, Scope $scope)
+    private function authorizeScope(Model $model, Scope $scope)
     {
         $scopeName = $scope->getName();
-        $access = $this->requestAccessFactory->get(get_class($model));
-        if (! $access->isScopable($scopeName)) {
+        $requestSchema = $this->requestSchemaFactory->get(get_class($model));
+        if (! $requestSchema->isScopable($scopeName)) {
             throw new NotScopableException($scopeName);
         }
     }
 
-    private function validateRelationshipSort(Model $model, array $relationshipSort)
+    private function authorizeRelationshipSort(Model $model, array $relationshipSort)
     {
         $explodedProperty = explode('.', $relationshipSort['property']);
         $parentModel = $model;
@@ -125,8 +125,8 @@ class AccessValidator implements AccessValidatorInterface
         for ($i = 0; $i < count($explodedProperty) - 1; $i++) {
             $relationName = $explodedProperty[$i];
 
-            $parentAccess = $this->requestAccessFactory->get(get_class($parentModel));
-            if (! $parentAccess->isSortable($relationName)) {
+            $parentRequestSchema = $this->requestSchemaFactory->get(get_class($parentModel));
+            if (! $parentRequestSchema->isSortable($relationName)) {
                 throw new NotSortableException($relationName);
             }
             $relation = $parentModel->$relationName();
@@ -134,11 +134,11 @@ class AccessValidator implements AccessValidatorInterface
         }
 
         if ($filter) {
-            $this->validateFilter($parentModel, $filter);
+            $this->authorizeFilter($parentModel, $filter);
         }
-        $parentAccess = $this->requestAccessFactory->get(get_class($parentModel));
+        $parentRequestSchema = $this->requestSchemaFactory->get(get_class($parentModel));
         $sortProperty = $explodedProperty[array_key_last($explodedProperty)];
-        if (! $parentAccess->isSortable($sortProperty)) {
+        if (! $parentRequestSchema->isSortable($sortProperty)) {
             throw new NotSortableException($sortProperty);
         }
     }

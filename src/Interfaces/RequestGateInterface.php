@@ -4,7 +4,7 @@ namespace Comhon\EntityRequester\Interfaces;
 
 use Comhon\EntityRequester\DTOs\EntityRequest;
 
-interface AccessValidatorInterface
+interface RequestGateInterface
 {
-    public function validate(EntityRequest $entityRequest);
+    public function authorize(EntityRequest $entityRequest);
 }

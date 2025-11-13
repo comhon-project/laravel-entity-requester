@@ -2,14 +2,14 @@
 
 namespace Tests\Feature\Feature;
 
-use Comhon\EntityRequester\Interfaces\RequestAccessFactoryInterface;
+use Comhon\EntityRequester\Interfaces\RequestSchemaFactoryInterface;
 use Tests\TestCase;
 
-class RequestAccessTest extends TestCase
+class RequestSchemaTest extends TestCase
 {
     public function test_schema_content()
     {
-        $schema = app(RequestAccessFactoryInterface::class)->get('user');
+        $schema = app(RequestSchemaFactoryInterface::class)->get('user');
         $this->assertEquals('user', $schema->getData()['id']);
         $this->assertEquals('user', $schema->getId());
 
