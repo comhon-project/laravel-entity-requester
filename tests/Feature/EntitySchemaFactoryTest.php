@@ -16,17 +16,17 @@ use Tests\TestCase;
 
 class EntitySchemaFactoryTest extends TestCase
 {
-    private function getSchemaPath(string $id): string
+    private function getEntitySchemaPath(string $id): string
     {
         return EntityRequester::getEntitySchemaDirectory().DIRECTORY_SEPARATOR.$id.'.json';
     }
 
-    private function getSchemaUserCacheKey(bool $json): string
+    private function getEntitySchemaUserCacheKey(bool $json): string
     {
         return 'entity-requester::entity-'.($json ? 'json' : 'object').'::user';
     }
 
-    private function getSchemaCacheKey(string $id, bool $json): string
+    private function getEntitySchemaCacheKey(string $id, bool $json): string
     {
         return 'entity-requester::entity-'.($json ? 'json' : 'object').'::'.$id;
     }
@@ -54,24 +54,24 @@ class EntitySchemaFactoryTest extends TestCase
             json_decode(file_get_contents($this->getDataFilePath('schemas/entities/user-indexed.json')), true),
             $schema->getData()
         );
-        $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
-        $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
+        $this->assertFalse($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(true)));
+        $this->assertFalse($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(false)));
     }
 
     public function test_get_schema_json()
     {
         $schema = app(EntitySchemaFactory::class)->getJson('user');
 
-        $this->assertJsonStringEqualsJsonFile($this->getSchemaPath('user'), $schema);
-        $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
-        $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
+        $this->assertJsonStringEqualsJsonFile($this->getEntitySchemaPath('user'), $schema);
+        $this->assertFalse($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(true)));
+        $this->assertFalse($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(false)));
     }
 
     public function test_get_schema_with_cache()
     {
         config(['entity-requester.use_cache' => true]);
-        $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
-        $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
+        $this->assertFalse($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(true)));
+        $this->assertFalse($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(false)));
 
         $schema = app(EntitySchemaFactoryInterface::class)->get('user');
 
@@ -80,8 +80,8 @@ class EntitySchemaFactoryTest extends TestCase
             json_decode(file_get_contents($this->getDataFilePath('schemas/entities/user-indexed.json')), true),
             $schema->getData()
         );
-        $this->assertTrue($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
-        $this->assertTrue($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
+        $this->assertTrue($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(true)));
+        $this->assertTrue($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(false)));
 
         // test retrieve schema from cache
         $schema = app(EntitySchemaFactoryInterface::class)->get('user');
@@ -96,18 +96,18 @@ class EntitySchemaFactoryTest extends TestCase
     public function test_get_schema_with_json_cache()
     {
         config(['entity-requester.use_cache' => true]);
-        $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
-        $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
+        $this->assertFalse($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(true)));
+        $this->assertFalse($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(false)));
 
         $schema = app(EntitySchemaFactory::class)->getJson('user');
 
-        $this->assertJsonStringEqualsJsonFile($this->getSchemaPath('user'), $schema);
-        $this->assertTrue($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
-        $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(false)));
+        $this->assertJsonStringEqualsJsonFile($this->getEntitySchemaPath('user'), $schema);
+        $this->assertTrue($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(true)));
+        $this->assertFalse($this->getTaggedCache()->has($this->getEntitySchemaUserCacheKey(false)));
 
         // test retrieve schema from cache
         $schema = app(EntitySchemaFactory::class)->getJson('user');
-        $this->assertJsonStringEqualsJsonFile($this->getSchemaPath('user'), $schema);
+        $this->assertJsonStringEqualsJsonFile($this->getEntitySchemaPath('user'), $schema);
     }
 
     public function test_flush_all_schemas_success()
@@ -119,17 +119,17 @@ class EntitySchemaFactoryTest extends TestCase
 
         $this->assertInstanceOf(TaggedCache::class, $cache);
 
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('user', false)));
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('user', true)));
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', false)));
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', true)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('user', false)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('user', true)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('visible', false)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('visible', true)));
 
         EntityRequester::refreshEntityCache();
 
-        $this->assertFalse($cache->has($this->getSchemaCacheKey('user', false)));
-        $this->assertFalse($cache->has($this->getSchemaCacheKey('user', true)));
-        $this->assertFalse($cache->has($this->getSchemaCacheKey('visible', false)));
-        $this->assertFalse($cache->has($this->getSchemaCacheKey('visible', true)));
+        $this->assertFalse($cache->has($this->getEntitySchemaCacheKey('user', false)));
+        $this->assertFalse($cache->has($this->getEntitySchemaCacheKey('user', true)));
+        $this->assertFalse($cache->has($this->getEntitySchemaCacheKey('visible', false)));
+        $this->assertFalse($cache->has($this->getEntitySchemaCacheKey('visible', true)));
     }
 
     public function test_flush_all_schemas_invalid_driver()
@@ -148,17 +148,17 @@ class EntitySchemaFactoryTest extends TestCase
         app(EntitySchemaFactory::class)->get('visible');
         $cache = $this->getTaggedCache();
 
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('user', false)));
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('user', true)));
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', false)));
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', true)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('user', false)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('user', true)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('visible', false)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('visible', true)));
 
         EntityRequester::refreshEntityCache('user');
 
-        $this->assertFalse($cache->has($this->getSchemaCacheKey('user', false)));
-        $this->assertFalse($cache->has($this->getSchemaCacheKey('user', true)));
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', false)));
-        $this->assertTrue($cache->has($this->getSchemaCacheKey('visible', true)));
+        $this->assertFalse($cache->has($this->getEntitySchemaCacheKey('user', false)));
+        $this->assertFalse($cache->has($this->getEntitySchemaCacheKey('user', true)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('visible', false)));
+        $this->assertTrue($cache->has($this->getEntitySchemaCacheKey('visible', true)));
     }
 
     public function test_get_schema_response()

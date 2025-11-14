@@ -168,7 +168,7 @@ class MakeModelSchema extends Command
             'scopes' => [],
         ];
 
-        $schemaPath = $this->getSchemaPath($model);
+        $schemaPath = $this->getEntitySchemaPath($model);
         if (! $fresh && file_exists($schemaPath)) {
             $schema = [
                 ...$schema,
@@ -207,7 +207,7 @@ class MakeModelSchema extends Command
             'properties' => [],
         ];
 
-        $lockPath = $this->getSchemaLockPath($model);
+        $lockPath = $this->getEntitySchemaLockPath($model);
         if (! $fresh && file_exists($lockPath)) {
             $lock = [
                 ...$lock,
@@ -665,7 +665,7 @@ class MakeModelSchema extends Command
         }
 
         $contents = [
-            $this->getSchemaPath($model) => $schema,
+            $this->getEntitySchemaPath($model) => $schema,
             $this->getRequestSchemaPath($model) => $requestSchema,
         ];
         foreach ($contents as $path => $content) {
@@ -691,17 +691,17 @@ class MakeModelSchema extends Command
         return Str::snake($this->getModelUniqueName($model), ' ');
     }
 
-    private function getSchemaPath(Model $model)
+    private function getEntitySchemaPath(Model $model)
     {
-        return $this->getSchemaPathWithoutExtension($model).'.json';
+        return $this->getEntitySchemaPathWithoutExtension($model).'.json';
     }
 
-    private function getSchemaLockPath(Model $model)
+    private function getEntitySchemaLockPath(Model $model)
     {
-        return $this->getSchemaPathWithoutExtension($model).'.lock';
+        return $this->getEntitySchemaPathWithoutExtension($model).'.lock';
     }
 
-    private function getSchemaPathWithoutExtension(Model $model)
+    private function getEntitySchemaPathWithoutExtension(Model $model)
     {
         return EntityRequester::getEntitySchemaDirectory().DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
     }
