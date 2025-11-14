@@ -20,18 +20,18 @@ class MakeModelSchemaComandTest extends TestCase
     {
         parent::setUp();
 
-        $schemaDir = base_path('schemas');
-        if (file_exists($schemaDir)) {
-            File::deleteDirectory($schemaDir);
+        $entitiesDir = base_path('schemas'.DIRECTORY_SEPARATOR.'entities');
+        if (file_exists($entitiesDir)) {
+            File::deleteDirectory($entitiesDir);
         }
 
-        $requestDir = base_path('requests');
+        $requestDir = base_path('schemas'.DIRECTORY_SEPARATOR.'requests');
         if (file_exists($requestDir)) {
             File::deleteDirectory($requestDir);
         }
 
         config([
-            'entity-requester.entity_schema_directory' => $schemaDir,
+            'entity-requester.entity_schema_directory' => $entitiesDir,
             'entity-requester.request_schema_directory' => $requestDir,
         ]);
     }
@@ -48,7 +48,7 @@ class MakeModelSchemaComandTest extends TestCase
 
     private function getExpectedEntitySchemaPath(string $fileName)
     {
-        $filePath = $this->getDataFilePath('schemas/'.$fileName);
+        $filePath = $this->getDataFilePath('schemas/entities/'.$fileName);
         if (! class_exists(Scope::class)) {
             $schema = json_decode(file_get_contents($filePath), true);
             $schema['scopes'] = collect($schema['scopes'])->filter(
@@ -63,7 +63,7 @@ class MakeModelSchemaComandTest extends TestCase
 
     private function getExpectedRequestSchemaPath(string $fileName)
     {
-        $filePath = $this->getDataFilePath('requests/'.$fileName);
+        $filePath = $this->getDataFilePath('schemas/requests/'.$fileName);
         if (! class_exists(Scope::class)) {
             $requestSchema = json_decode(file_get_contents($filePath), true);
             $requestSchema['filtrable']['scopes'] = collect($requestSchema['filtrable']['scopes'])->filter(
@@ -114,23 +114,23 @@ class MakeModelSchemaComandTest extends TestCase
 
     private function copyUserSchemaFiles()
     {
-        mkdir(EntityRequester::getEntitySchemaDirectory());
+        mkdir(EntityRequester::getEntitySchemaDirectory(), recursive: true);
         copy(
-            $this->getDataFilePath('schemas/user-partial.json'),
+            $this->getDataFilePath('schemas/entities/user-partial.json'),
             $this->getSchemaPath('user.json')
         );
         copy(
-            $this->getDataFilePath('schemas/user.lock'),
+            $this->getDataFilePath('schemas/entities/user.lock'),
             $this->getSchemaPath('user.lock')
         );
 
-        mkdir(EntityRequester::getRequestSchemaDirectory());
+        mkdir(EntityRequester::getRequestSchemaDirectory(), recursive: true);
         copy(
-            $this->getDataFilePath('requests/user-partial.json'),
+            $this->getDataFilePath('schemas/requests/user-partial.json'),
             $this->getRequestSchemaPath('user.json')
         );
         copy(
-            $this->getDataFilePath('requests/user.lock'),
+            $this->getDataFilePath('schemas/requests/user.lock'),
             $this->getRequestSchemaPath('user.lock')
         );
     }

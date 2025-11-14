@@ -671,7 +671,7 @@ class MakeModelSchema extends Command
         foreach ($contents as $path => $content) {
             $dir = dirname($path);
             if (! file_exists($dir)) {
-                mkdir($dir);
+                mkdir($dir, recursive: true);
             }
             file_put_contents(
                 $path,

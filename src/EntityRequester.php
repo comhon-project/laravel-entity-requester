@@ -10,12 +10,14 @@ class EntityRequester
 {
     public function getEntitySchemaDirectory(): string
     {
-        return config('entity-requester.entity_schema_directory') ?? base_path('schemas');
+        return config('entity-requester.entity_schema_directory')
+            ?? base_path('schemas'.DIRECTORY_SEPARATOR).'entities';
     }
 
     public function getRequestSchemaDirectory(): string
     {
-        return config('entity-requester.request_schema_directory') ?? base_path('requests');
+        return config('entity-requester.request_schema_directory')
+        ?? base_path('schemas'.DIRECTORY_SEPARATOR).'requests';
     }
 
     public function useCache(): bool

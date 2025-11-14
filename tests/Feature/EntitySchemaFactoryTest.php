@@ -51,7 +51,7 @@ class EntitySchemaFactoryTest extends TestCase
 
         $this->assertInstanceOf(EntitySchema::class, $schema);
         $this->assertEquals(
-            json_decode(file_get_contents($this->getDataFilePath('schemas/user-indexed.json')), true),
+            json_decode(file_get_contents($this->getDataFilePath('schemas/entities/user-indexed.json')), true),
             $schema->getData()
         );
         $this->assertFalse($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
@@ -77,7 +77,7 @@ class EntitySchemaFactoryTest extends TestCase
 
         $this->assertInstanceOf(EntitySchema::class, $schema);
         $this->assertEquals(
-            json_decode(file_get_contents($this->getDataFilePath('schemas/user-indexed.json')), true),
+            json_decode(file_get_contents($this->getDataFilePath('schemas/entities/user-indexed.json')), true),
             $schema->getData()
         );
         $this->assertTrue($this->getTaggedCache()->has($this->getSchemaUserCacheKey(true)));
@@ -88,7 +88,7 @@ class EntitySchemaFactoryTest extends TestCase
 
         $this->assertInstanceOf(EntitySchema::class, $schema);
         $this->assertEquals(
-            json_decode(file_get_contents($this->getDataFilePath('schemas/user-indexed.json')), true),
+            json_decode(file_get_contents($this->getDataFilePath('schemas/entities/user-indexed.json')), true),
             $schema->getData()
         );
     }

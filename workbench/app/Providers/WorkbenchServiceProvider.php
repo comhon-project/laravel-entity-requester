@@ -46,8 +46,8 @@ class WorkbenchServiceProvider extends ServiceProvider
 
         $workbenchDir = dirname(__DIR__, 2);
         config([
-            'entity-requester.entity_schema_directory' => $workbenchDir.'/schemas',
-            'entity-requester.request_schema_directory' => $workbenchDir.'/requests',
+            'entity-requester.entity_schema_directory' => $workbenchDir.'/schemas/entities',
+            'entity-requester.request_schema_directory' => $workbenchDir.'/schemas/requests',
         ]);
 
         Relation::enforceMorphMap([
