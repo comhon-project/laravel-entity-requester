@@ -65,11 +65,7 @@
         {
             "id": "status",
             "type": "integer",
-            "enum": {
-                "1": "pending",
-                "2": "approved",
-                "3": "rejected"
-            },
+            "enum": "status",
             "nullable": true
         },
         {
@@ -77,11 +73,7 @@
             "type": "array",
             "children": {
                 "type": "string",
-                "enum": {
-                    "apple": "apple",
-                    "orange": "orange",
-                    "strawberry": "strawberry"
-                }
+                "enum": "fruit"
             },
             "nullable": true
         },
@@ -195,11 +187,7 @@
                     "id": "fruit",
                     "name": "fruit",
                     "type": "string",
-                    "enum": {
-                        "apple": "apple",
-                        "orange": "orange",
-                        "strawberry": "strawberry"
-                    },
+                    "enum": "fruit",
                     "nullable": false
                 }
             ]

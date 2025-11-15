@@ -111,29 +111,32 @@ class MakeModelSchema extends Command
         /** @var \Illuminate\Database\Eloquent\Model $model */
         $model = new $modelClass;
 
-        $schema = $this->initSchema($model, $fresh);
+        $entitySchema = $this->initSchema($model, $fresh);
         $requestSchema = $this->initRequestSchema($model, $fresh);
+        $enumSchemas = [];
 
         // Locked properties, scopes, filters, and sorts are skipped:
         // - If the element is present in the existing schema, it must remain unchanged in the updated schema.
         // - If the element is absent in the existing schema, it must remain absent in the updated schema.
-        $schemaLock = $this->initSchemaLock($model, $fresh);
+        $entitySchemaLock = $this->initSchemaLock($model, $fresh);
         $requestSchemaLock = $this->initRequestSchemaLock($model, $fresh);
 
-        $schema['properties'] = $this->getProperties(
+        $entitySchema['properties'] = $this->getProperties(
             $model,
-            $schema['properties'] ?? [],
-            $schemaLock['properties'] ?? [],
+            $entitySchema['properties'] ?? [],
+            $entitySchemaLock['properties'] ?? [],
+            $enumSchemas,
         );
-        $schema['scopes'] = $this->getModelScopes(
+        $entitySchema['scopes'] = $this->getModelScopes(
             $model,
-            $schema['scopes'] ?? [],
-            $schemaLock['scopes'] ?? [],
+            $entitySchema['scopes'] ?? [],
+            $entitySchemaLock['scopes'] ?? [],
+            $enumSchemas,
         );
         $requestSchema['filtrable']['properties'] = $this->getRequestProperties(
             $model,
             $filtrable,
-            $schema['properties'],
+            $entitySchema['properties'],
             $requestSchema['filtrable']['properties'] ?? [],
             $requestSchemaLock['filtrable']['properties'] ?? [],
             'filtrable',
@@ -141,20 +144,20 @@ class MakeModelSchema extends Command
         $requestSchema['filtrable']['scopes'] = $this->getRequestScopes(
             $model,
             $scopable,
-            $schema['scopes'],
+            $entitySchema['scopes'],
             $requestSchema['filtrable']['scopes'] ?? [],
             $requestSchemaLock['filtrable']['scopes'] ?? [],
         );
         $requestSchema['sortable'] = $this->getRequestProperties(
             $model,
             $sortable,
-            $schema['properties'],
+            $entitySchema['properties'],
             $requestSchema['sortable'] ?? [],
             $requestSchemaLock['sortable'] ?? [],
             'sortable',
         );
 
-        $this->saveFile($model, $schema, $requestSchema);
+        $this->saveFile($model, $entitySchema, $requestSchema, $enumSchemas);
     }
 
     private function initSchema(Model $model, bool $fresh)
@@ -266,23 +269,23 @@ class MakeModelSchema extends Command
         return $typeInfos;
     }
 
-    private function getTypeInfosFromCast($castType): array
+    private function getTypeInfosFromCast($castType, array &$enumSchemas): array
     {
         $typeInfos = ['type' => null];
 
         if (str_contains($castType, AsEnumCollection::class)) {
             $typeInfos['type'] = 'array';
             $enumClass = explode(':', $castType)[1];
-            $typeInfos['children'] = $this->getTypeInfosFromCast($enumClass);
+            $typeInfos['children'] = $this->getTypeInfosFromCast($enumClass, $enumSchemas);
 
             return $typeInfos;
         }
 
         if (enum_exists($castType)) {
-            $typeInfos['enum'] = collect($castType::cases())
-                ->mapWithKeys(fn ($case) => [$case->value => Str::snake($case->name, ' ')])
-                ->all();
-            $castType = $this->getEnumBackingType($castType);
+            $enumSchema = $this->getEnumSchema($castType);
+            $enumSchemas[$castType] = $enumSchema;
+            $typeInfos['enum'] = $enumSchema['id'];
+            $castType = $enumSchema['type'];
         }
 
         $typeInfos['type'] = match ($castType) {
@@ -319,8 +322,10 @@ class MakeModelSchema extends Command
         return $typeInfos;
     }
 
-    private function getTypeFromFunctionParameterType(\ReflectionParameter $parameter): array
-    {
+    private function getTypeFromFunctionParameterType(
+        \ReflectionParameter $parameter,
+        array &$enumSchemas,
+    ): array {
         $typeInfos = ['type' => null];
 
         if (! $parameter->getType() instanceof \ReflectionNamedType) {
@@ -330,10 +335,10 @@ class MakeModelSchema extends Command
         $paramType = $parameter->getType()->getName();
 
         if (enum_exists($paramType)) {
-            $typeInfos['enum'] = collect($paramType::cases())
-                ->mapWithKeys(fn ($case) => [$case->value => Str::snake($case->name, ' ')])
-                ->all();
-            $paramType = $this->getEnumBackingType($paramType);
+            $enumSchema = $this->getEnumSchema($paramType);
+            $enumSchemas[$paramType] = $enumSchema;
+            $typeInfos['enum'] = $enumSchema['id'];
+            $paramType = $enumSchema['type'];
         }
 
         $typeInfos['type'] = match ($paramType) {
@@ -353,17 +358,31 @@ class MakeModelSchema extends Command
         return $typeInfos;
     }
 
-    private function getEnumBackingType(string $enumClass): string
+    private function getEnumSchema(string $enumClass): array
     {
+        $uniqueName = $this->getUniqueName($enumClass);
         $reflection = new ReflectionEnum($enumClass);
 
-        return $reflection->isBacked()
-            ? $reflection->getBackingType()->getName()
-            : throw new \Exception("enum '$enumClass' must be backed");
+        return [
+            'id' => $uniqueName,
+            'type' => $reflection->isBacked()
+                ? match ($reflection->getBackingType()->getName()) {
+                    'string' => 'string',
+                    'int' => 'integer',
+                }
+                : throw new \Exception("enum '$enumClass' must be backed"),
+            'cases' => collect($enumClass::cases())
+                ->map(fn ($case) => ['id' => $case->value, 'name' => Str::snake($case->name, ' ')])
+                ->all(),
+        ];
     }
 
-    private function getProperties(Model $model, array $existingProperties, array $lockedProperties)
-    {
+    private function getProperties(
+        Model $model,
+        array $existingProperties,
+        array $lockedProperties,
+        array &$enumSchemas,
+    ) {
         $properties = [];
         $lockedExistingProperties = collect($existingProperties)
             ->filter(fn ($property) => in_array($property['id'], $lockedProperties))
@@ -383,7 +402,7 @@ class MakeModelSchema extends Command
             } elseif ($this->isVisibleProperty($model, $column->name)) {
                 $castType = $casts[$column->name] ?? null;
                 $typeInfos = $castType
-                    ? $this->getTypeInfosFromCast($castType)
+                    ? $this->getTypeInfosFromCast($castType, $enumSchemas)
                     : $this->getTypeInfosFromDatabase($column->type);
 
                 if (isset($typeInfos['type'])) {
@@ -488,8 +507,12 @@ class MakeModelSchema extends Command
             && (empty($model->getVisible()) || in_array($property, $model->getVisible()));
     }
 
-    private function getModelScopes(Model $model, array $existingScopes, array $lockedScopes)
-    {
+    private function getModelScopes(
+        Model $model,
+        array $existingScopes,
+        array $lockedScopes,
+        array &$enumSchemas,
+    ) {
         $scopes = [];
         $lockedExistingScopes = collect($existingScopes)
             ->keyBy(fn ($scope) => is_array($scope) ? $scope['id'] : $scope)
@@ -511,7 +534,7 @@ class MakeModelSchema extends Command
                 $methodParameters = $method->getParameters();
                 array_shift($methodParameters); // remove query builder parameter
                 foreach ($methodParameters as $methodParameter) {
-                    $typeInfos = $this->getTypeFromFunctionParameterType($methodParameter);
+                    $typeInfos = $this->getTypeFromFunctionParameterType($methodParameter, $enumSchemas);
                     if (! isset($typeInfos['type'])) {
                         $usable = false;
                         break;
@@ -655,9 +678,9 @@ class MakeModelSchema extends Command
         return $finalRequestScopes;
     }
 
-    private function saveFile(Model $model, array $schema, $requestSchema)
+    private function saveFile(Model $model, array $entitySchema, array $requestSchema, array $enumSchemas)
     {
-        if ($this->getModelUniqueName($model) !== $schema['id']) {
+        if ($this->getModelUniqueName($model) !== $entitySchema['id']) {
             throw new \Exception("mismatching 'id' and model unique name on entity schema");
         }
         if ($this->getModelUniqueName($model) !== $requestSchema['id']) {
@@ -665,9 +688,13 @@ class MakeModelSchema extends Command
         }
 
         $contents = [
-            $this->getEntitySchemaPath($model) => $schema,
+            $this->getEntitySchemaPath($model) => $entitySchema,
             $this->getRequestSchemaPath($model) => $requestSchema,
         ];
+        foreach ($enumSchemas as $class => $enumSchema) {
+            $contents[$this->getEnumSchemaPath($class)] = $enumSchema;
+        }
+
         foreach ($contents as $path => $content) {
             $dir = dirname($path);
             if (! file_exists($dir)) {
@@ -682,8 +709,13 @@ class MakeModelSchema extends Command
 
     private function getModelUniqueName(Model $model)
     {
-        return $this->modelResolver->getUniqueName(get_class($model))
-            ?? throw new \Exception('public name is not defined for class '.get_class($model));
+        return $this->getUniqueName(get_class($model));
+    }
+
+    private function getUniqueName(string $class)
+    {
+        return $this->modelResolver->getUniqueName($class)
+            ?? throw new \Exception('unique name is not defined for '.$class);
     }
 
     private function getModelReadableName(Model $model)
@@ -703,7 +735,8 @@ class MakeModelSchema extends Command
 
     private function getEntitySchemaPathWithoutExtension(Model $model)
     {
-        return EntityRequester::getEntitySchemaDirectory().DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
+        return EntityRequester::getEntitySchemaDirectory()
+            .DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
     }
 
     private function getRequestSchemaPath(Model $model)
@@ -718,7 +751,14 @@ class MakeModelSchema extends Command
 
     private function getRequestSchemaPathWithoutExtension(Model $model)
     {
-        return EntityRequester::getRequestSchemaDirectory().DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
+        return EntityRequester::getRequestSchemaDirectory()
+            .DIRECTORY_SEPARATOR.$this->getModelUniqueName($model);
+    }
+
+    private function getEnumSchemaPath(string $class)
+    {
+        return EntityRequester::getEnumSchemaDirectory()
+            .DIRECTORY_SEPARATOR.$this->getUniqueName($class).'.json';
     }
 
     private function getRequestOption(string $option, array $allowedValues): string

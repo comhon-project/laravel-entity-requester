@@ -1,0 +1,18 @@
+{
+    "id": "fruit",
+    "type": "string",
+    "cases": [
+        {
+            "id": "apple",
+            "name": "apple"
+        },
+        {
+            "id": "orange",
+            "name": "orange"
+        },
+        {
+            "id": "strawberry",
+            "name": "strawberry"
+        }
+    ]
+}

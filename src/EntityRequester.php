@@ -20,6 +20,12 @@ class EntityRequester
         ?? base_path('schemas'.DIRECTORY_SEPARATOR).'requests';
     }
 
+    public function getEnumSchemaDirectory(): string
+    {
+        return config('entity-requester.enum_schema_directory')
+        ?? base_path('schemas'.DIRECTORY_SEPARATOR).'enums';
+    }
+
     public function useCache(): bool
     {
         return config('entity-requester.use_cache') ?? false;

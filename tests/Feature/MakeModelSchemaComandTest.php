@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Feature;
 
+use App\Enums\Status;
 use App\Models\User;
 use Comhon\EntityRequester\Commands\MakeModelSchema;
 use Comhon\EntityRequester\Facades\EntityRequester;
@@ -24,15 +25,19 @@ class MakeModelSchemaComandTest extends TestCase
         if (file_exists($entitiesDir)) {
             File::deleteDirectory($entitiesDir);
         }
-
         $requestDir = base_path('schemas'.DIRECTORY_SEPARATOR.'requests');
         if (file_exists($requestDir)) {
             File::deleteDirectory($requestDir);
+        }
+        $enumDir = base_path('schemas'.DIRECTORY_SEPARATOR.'enums');
+        if (file_exists($enumDir)) {
+            File::deleteDirectory($enumDir);
         }
 
         config([
             'entity-requester.entity_schema_directory' => $entitiesDir,
             'entity-requester.request_schema_directory' => $requestDir,
+            'entity-requester.enum_schema_directory' => $enumDir,
         ]);
     }
 
@@ -44,6 +49,11 @@ class MakeModelSchemaComandTest extends TestCase
     private function getRequestSchemaPath(string $filename): string
     {
         return EntityRequester::getRequestSchemaDirectory().DIRECTORY_SEPARATOR.$filename;
+    }
+
+    private function getEnumSchemaPath(string $filename): string
+    {
+        return EntityRequester::getEnumSchemaDirectory().DIRECTORY_SEPARATOR.$filename;
     }
 
     private function getExpectedEntitySchemaPath(string $fileName)
@@ -201,6 +211,16 @@ class MakeModelSchemaComandTest extends TestCase
         $json = file_get_contents($this->getRequestSchemaPath('user.json'));
         $this->assertEquals($pretty, str_contains($json, "\n"));
         $this->assertSchemaStringEqualsSchemaFile($this->getExpectedRequestSchemaPath('user.json'), $json);
+
+        $this->assertFileExists($this->getEnumSchemaPath('fruit.json'));
+        $json = file_get_contents($this->getEnumSchemaPath('fruit.json'));
+        $this->assertEquals($pretty, str_contains($json, "\n"));
+        $this->assertSchemaStringEqualsSchemaFile($this->getDataFilePath('schemas/enums/fruit.json'), $json);
+
+        $this->assertFileExists($this->getEnumSchemaPath('status.json'));
+        $json = file_get_contents($this->getEnumSchemaPath('status.json'));
+        $this->assertEquals($pretty, str_contains($json, "\n"));
+        $this->assertSchemaStringEqualsSchemaFile($this->getDataFilePath('schemas/enums/status.json'), $json);
     }
 
     public function test_create_model_schema_full_name_space_success()
@@ -211,7 +231,7 @@ class MakeModelSchemaComandTest extends TestCase
 
     public function test_create_model_schema_failure_no_public_name()
     {
-        $this->expectExceptionMessage('public name is not defined for class App\Models\NoPublicName');
+        $this->expectExceptionMessage('unique name is not defined for App\Models\NoPublicName');
         $this->callMakeModelSchemaCommand('NoPublicName');
     }
 
@@ -581,7 +601,7 @@ class MakeModelSchemaComandTest extends TestCase
         $property->setValue($command, app(ModelResolverInterface::class));
 
         $this->expectExceptionMessage("mismatching 'id' and model unique name on entity schema");
-        $method->invoke($command, new User, ['id' => 'foo'], ['id' => 'user']);
+        $method->invoke($command, new User, ['id' => 'foo'], ['id' => 'user'], []);
     }
 
     public function test_mismatching_request_schema_id()
@@ -596,7 +616,7 @@ class MakeModelSchemaComandTest extends TestCase
         $property->setValue($command, app(ModelResolverInterface::class));
 
         $this->expectExceptionMessage("mismatching 'id' and model unique name on request schema");
-        $method->invoke($command, new User, ['id' => 'user'], ['id' => 'foo']);
+        $method->invoke($command, new User, ['id' => 'user'], ['id' => 'foo'], []);
     }
 
     #[DataProvider('provider_databases_colums_query')]
@@ -681,7 +701,11 @@ class MakeModelSchemaComandTest extends TestCase
         $property->setAccessible(true);
         $property->setValue($command, app(ModelResolverInterface::class));
 
-        $typeInfos = $method->invoke($command, $castType);
+        $enumSchemas = [];
+        $typeInfos = $method->invokeArgs($command, [
+            $castType,
+            &$enumSchemas,
+        ]);
         $this->assertEquals($expect, $typeInfos);
     }
 
@@ -701,6 +725,43 @@ class MakeModelSchemaComandTest extends TestCase
             ['integer', ['type' => 'integer']],
             ['timestamp', ['type' => 'timestamp']],
         ];
+    }
+
+    public function test_cast_type_enum()
+    {
+        $command = new MakeModelSchema;
+        $reflection = new ReflectionClass($command);
+        $method = $reflection->getMethod('getTypeInfosFromCast');
+        $method->setAccessible(true);
+
+        $property = $reflection->getProperty('modelResolver');
+        $property->setAccessible(true);
+        $property->setValue($command, app(ModelResolverInterface::class));
+
+        $enumSchemas = [];
+        $typeInfos = $method->invokeArgs($command, [
+            Status::class,
+            &$enumSchemas,
+        ]);
+
+        $this->assertEquals(
+            ['type' => 'integer', 'enum' => 'status'],
+            $typeInfos
+        );
+
+        $this->assertCount(1, $enumSchemas);
+        $this->assertEquals(
+            [
+                'id' => 'status',
+                'type' => 'integer',
+                'cases' => [
+                    ['id' => 1, 'name' => 'pending'],
+                    ['id' => 2, 'name' => 'approved'],
+                    ['id' => 3, 'name' => 'rejected'],
+                ],
+            ],
+            $enumSchemas[Status::class]
+        );
     }
 
     public function test_invalid_resolver()

@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Enums\Fruit;
+use App\Enums\NotBacked;
+use App\Enums\Status;
 use App\Models\Post;
 use App\Models\Purchase;
 use App\Models\Tag;
@@ -27,7 +30,10 @@ class WorkbenchServiceProvider extends ServiceProvider
                 ->bind('post', Post::class)
                 ->bind('visible', Visible::class)
                 ->bind('purchase', Purchase::class)
-                ->bind('tag', Tag::class);
+                ->bind('tag', Tag::class)
+                ->bind('status', Status::class)
+                ->bind('fruit', Fruit::class)
+                ->bind('not-backed', NotBacked::class);
         });
     }
 
@@ -48,6 +54,7 @@ class WorkbenchServiceProvider extends ServiceProvider
         config([
             'entity-requester.entity_schema_directory' => $workbenchDir.'/schemas/entities',
             'entity-requester.request_schema_directory' => $workbenchDir.'/schemas/requests',
+            'entity-requester.enum_schema_directory' => $workbenchDir.'/schemas/enums',
         ]);
 
         Relation::enforceMorphMap([

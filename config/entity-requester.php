@@ -13,6 +13,12 @@ return [
     'entity_schema_directory' => null,
 
     /*
+    | determine in which directory enums schemas are stored
+    | by default, files are stored in the "schemas/enums" directory at the root of the project
+    */
+    'enum_schema_directory' => null,
+
+    /*
     | determine in which directory requests schemas are stored
     | by default, files are stored in the "schemas/requests" directory at the root of the project
     */

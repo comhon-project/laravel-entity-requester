@@ -56,12 +56,7 @@
                     "id": "fruit",
                     "name": "fruit",
                     "type": "string",
-                    "enum": {
-                        "apple": "apple",
-                        "orange": "orange",
-                        "strawberry": "strawberry",
-                        "LOCKED": "locked"
-                    },
+                    "enum": "fruit",
                     "nullable": false
                 }
             ]
