@@ -16,13 +16,13 @@
             "id": "posts",
             "type": "relationship",
             "relationship_type": "morph_to_many",
-            "model": "post"
+            "related": "post"
         },
         {
             "id": "purchases",
             "type": "relationship",
             "relationship_type": "morph_to_many",
-            "model": "purchase"
+            "related": "purchase"
         }
     ],
     "unique_identifier": "id",

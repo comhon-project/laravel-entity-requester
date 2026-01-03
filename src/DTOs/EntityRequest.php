@@ -33,9 +33,9 @@ class EntityRequest
             $this->fill($data);
         }
         if (! isset($this->modelClass)) {
-            $this->modelClass = $modelClass ?? throw new MissingValueException($this->getStack('model', []));
+            $this->modelClass = $modelClass ?? throw new MissingValueException($this->getStack('entity', []));
         } elseif ($modelClass && $modelClass != $this->modelClass) {
-            throw new \Exception('model and model class missmatch');
+            throw new \Exception('entity and model class missmatch');
         }
         if (! is_subclass_of($this->modelClass, Model::class)) {
             throw new \Exception('model class must be instance of '.Model::class);
@@ -113,13 +113,13 @@ class EntityRequest
      */
     private function fill(array $data)
     {
-        if (isset($data['model'])) {
-            if (! is_string($data['model'])) {
-                throw new MalformedValueException('model', 'string');
+        if (isset($data['entity'])) {
+            if (! is_string($data['entity'])) {
+                throw new MalformedValueException('entity', 'string');
             }
-            $class = app(ModelResolverInterface::class)->getClass($data['model']);
+            $class = app(ModelResolverInterface::class)->getClass($data['entity']);
             if (! $class) {
-                throw new MalformedValueException('model', 'model name');
+                throw new MalformedValueException('entity', 'entity name');
             }
             $this->modelClass = $class;
         }

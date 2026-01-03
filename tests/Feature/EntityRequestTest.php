@@ -19,7 +19,7 @@ class EntityRequestTest extends TestCase
 {
     public function test_instanciate_entity_request_only_model()
     {
-        $entityRequest = new EntityRequest(['model' => 'user']);
+        $entityRequest = new EntityRequest(['entity' => 'user']);
 
         $this->assertEquals(User::class, $entityRequest->getModelClass());
     }
@@ -33,27 +33,27 @@ class EntityRequestTest extends TestCase
 
     public function test_instanciate_entity_request_redondant_model()
     {
-        $entityRequest = new EntityRequest(['model' => 'user'], User::class);
+        $entityRequest = new EntityRequest(['entity' => 'user'], User::class);
 
         $this->assertEquals(User::class, $entityRequest->getModelClass());
     }
 
     public function test_instanciate_entity_request_missmatch_model()
     {
-        $this->expectExceptionMessage('model and model class missmatch');
-        new EntityRequest(['model' => 'visible'], User::class);
+        $this->expectExceptionMessage('entity and model class missmatch');
+        new EntityRequest(['entity' => 'visible'], User::class);
     }
 
     public function test_instanciate_entity_request_missing_model()
     {
-        $this->expectExceptionMessage("Property 'model' is required");
+        $this->expectExceptionMessage("Property 'entity' is required");
         new EntityRequest;
     }
 
     public function test_instanciate_entity_request_invalid_model()
     {
-        $this->expectExceptionMessage("Invalid property 'model', must be a model name");
-        new EntityRequest(['model' => 'foo']);
+        $this->expectExceptionMessage("Invalid property 'entity', must be a entity name");
+        new EntityRequest(['entity' => 'foo']);
     }
 
     public function test_instanciate_entity_request_invalid_model_class()
@@ -64,14 +64,14 @@ class EntityRequestTest extends TestCase
 
     public function test_instanciate_entity_request_invalid_model_type()
     {
-        $this->expectExceptionMessage("Invalid property 'model', must be a string");
-        new EntityRequest(['model' => 123]);
+        $this->expectExceptionMessage("Invalid property 'entity', must be a string");
+        new EntityRequest(['entity' => 123]);
     }
 
     public function test_instanciate_entity_request_valid()
     {
         $entityRequest = new EntityRequest([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'group',
                 'operator' => 'or',
@@ -179,7 +179,7 @@ class EntityRequestTest extends TestCase
 
         $this->expectExceptionMessage($error);
         new EntityRequest([
-            'model' => 'user',
+            'entity' => 'user',
             ...$data,
         ]);
     }
@@ -358,7 +358,7 @@ class EntityRequestTest extends TestCase
     #[DataProvider('providerBoolean')]
     public function test_add_filter_abstract_condition(bool $and)
     {
-        $entityRequest = new EntityRequest(['model' => 'user']);
+        $entityRequest = new EntityRequest(['entity' => 'user']);
 
         $condition = new Condition('foo', ConditionOperator::Equal, 'bar');
         $entityRequest->addFilter($condition, $and);
@@ -374,7 +374,7 @@ class EntityRequestTest extends TestCase
     #[DataProvider('providerBoolean')]
     public function test_add_filter_array(bool $and)
     {
-        $entityRequest = new EntityRequest(['model' => 'user']);
+        $entityRequest = new EntityRequest(['entity' => 'user']);
 
         $conditions = [
             new Condition('foo', ConditionOperator::Equal, 'bar'),
@@ -391,7 +391,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_filter_same_operator()
     {
-        $entityRequest = new EntityRequest(['model' => 'user']);
+        $entityRequest = new EntityRequest(['entity' => 'user']);
 
         $groupOr = new Group(GroupOperator::Or);
         $groupOr->add(new Condition('foo', ConditionOperator::Equal, 'bar'));
@@ -408,7 +408,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_filter_different_operator()
     {
-        $entityRequest = new EntityRequest(['model' => 'user']);
+        $entityRequest = new EntityRequest(['entity' => 'user']);
 
         $groupOr = new Group(GroupOperator::Or);
         $groupOr->add(new Condition('foo', ConditionOperator::Equal, 'bar'));
@@ -429,7 +429,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_filter_empty_array()
     {
-        $entityRequest = new EntityRequest(['model' => 'user']);
+        $entityRequest = new EntityRequest(['entity' => 'user']);
 
         $entityRequest->addFilter([]);
         $this->assertNull($entityRequest->getFilter());
@@ -437,7 +437,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_filter_array_invalid()
     {
-        $entityRequest = new EntityRequest(['model' => 'user']);
+        $entityRequest = new EntityRequest(['entity' => 'user']);
 
         $this->expectExceptionMessage('each filters element must be instance of AbstractCondition');
         $entityRequest->addFilter(['foo']);
@@ -445,7 +445,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_sort()
     {
-        $entityRequest = new EntityRequest(['model' => 'user']);
+        $entityRequest = new EntityRequest(['entity' => 'user']);
 
         $entityRequest->addSort('foo');
         $entityRequest->addSort('bar', OrderDirection::Desc);

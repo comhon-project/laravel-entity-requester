@@ -91,31 +91,31 @@
             "id": "posts",
             "type": "relationship",
             "relationship_type": "has_many",
-            "model": "post"
+            "related": "post"
         },
         "publicPosts": {
             "id": "publicPosts",
             "type": "relationship",
             "relationship_type": "has_many",
-            "model": "post"
+            "related": "post"
         },
         "friends": {
             "id": "friends",
             "type": "relationship",
             "relationship_type": "belongs_to_many",
-            "model": "user"
+            "related": "user"
         },
         "purchases": {
             "id": "purchases",
             "type": "relationship",
             "relationship_type": "morph_many",
-            "model": "purchase"
+            "related": "purchase"
         },
         "childrenPosts": {
             "id": "childrenPosts",
             "type": "relationship",
             "relationship_type": "has_many_through",
-            "model": "post"
+            "related": "post"
         }
     },
     "unique_identifier": "id",

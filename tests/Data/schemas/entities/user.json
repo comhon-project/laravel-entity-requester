@@ -96,25 +96,25 @@
             "id": "posts",
             "type": "relationship",
             "relationship_type": "has_many",
-            "model": "post"
+            "related": "post"
         },
         {
             "id": "friends",
             "type": "relationship",
             "relationship_type": "belongs_to_many",
-            "model": "user"
+            "related": "user"
         },
         {
             "id": "purchases",
             "type": "relationship",
             "relationship_type": "morph_many",
-            "model": "purchase"
+            "related": "purchase"
         },
         {
             "id": "childrenPosts",
             "type": "relationship",
             "relationship_type": "has_many_through",
-            "model": "post"
+            "related": "post"
         }
     ],
     "unique_identifier": "id",

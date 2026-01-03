@@ -35,7 +35,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_request_only_model()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
         ]);
 
         $rawSql = $this->getRawSqlAccordingDriver('select * from "users" order by "name" asc, "first_name" asc');
@@ -45,7 +45,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_request_default_sort_by_model_key()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'post',
+            'entity' => 'post',
         ]);
 
         $rawSql = $this->getRawSqlAccordingDriver('select * from "posts" order by "id" asc');
@@ -57,7 +57,7 @@ class QueryBuilderTest extends TestCase
         $this->expectException(InvalidScopeParametersException::class);
         $this->expectExceptionMessage("invalid 'foo' scope parameters");
         QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'scope',
                 'name' => 'foo',
@@ -70,7 +70,7 @@ class QueryBuilderTest extends TestCase
         $this->expectException(InvalidScopeParametersException::class);
         $this->expectExceptionMessage("invalid 'foo' scope parameters");
         QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'scope',
                 'name' => 'foo',
@@ -109,7 +109,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_request_valid()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'group',
                 'operator' => 'and',
@@ -204,7 +204,7 @@ class QueryBuilderTest extends TestCase
     {
         $operator = $and ? 'and' : 'or';
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'group',
                 'operator' => $operator,
@@ -315,7 +315,7 @@ class QueryBuilderTest extends TestCase
         }
 
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'group',
                 'operator' => 'and',
@@ -345,7 +345,7 @@ class QueryBuilderTest extends TestCase
         Purchase::factory()->for(User::factory(), 'buyer')->create();
 
         $query = QueryBuilder::fromInputs([
-            'model' => 'purchase',
+            'entity' => 'purchase',
             'filter' => [
                 'type' => 'relationship_condition',
                 'operator' => 'Has',
@@ -376,7 +376,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_morph_one_or_many_sort_with_filter()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'purchases.amount',
@@ -421,7 +421,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_belongs_to_sort_simple()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'post',
+            'entity' => 'post',
             'sort' => [
                 [
                     'property' => 'owner.email',
@@ -444,7 +444,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_belongs_to_sort_complex()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'post',
+            'entity' => 'post',
             'sort' => [
                 [
                     'property' => 'owner.email',
@@ -471,7 +471,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_has_one_or_many_sort_simple()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'posts.name',
@@ -496,7 +496,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_has_one_or_many_sort_complex()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'publicPosts.name',
@@ -521,7 +521,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_morph_one_or_many_sort_simple()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'purchases.amount',
@@ -547,7 +547,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_morph_one_or_many_sort_complex()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'purchases.amount',
@@ -577,7 +577,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_belongs_to_many_sort_simple()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'friends.id',
@@ -604,7 +604,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_belongs_to_many_sort_complex()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'friends.id',
@@ -635,7 +635,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_morph_to_many_sort_simple()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'post',
+            'entity' => 'post',
             'sort' => [
                 [
                     'property' => 'tags.id',
@@ -663,7 +663,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_morph_to_many_sort_complex()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'post',
+            'entity' => 'post',
             'sort' => [
                 [
                     'property' => 'publicTags.id',
@@ -690,7 +690,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_morphed_by_many_sort_simple()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'tag',
+            'entity' => 'tag',
             'sort' => [
                 [
                     'property' => 'posts.name',
@@ -725,7 +725,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_morphed_by_many_sort_complex()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'tag',
+            'entity' => 'tag',
             'sort' => [
                 [
                     'property' => 'posts.name',
@@ -756,7 +756,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_has_many_through_sort_simple()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'childrenPosts.name',
@@ -790,7 +790,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_has_many_through_sort_complex()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'childrenPosts.name',
@@ -822,7 +822,7 @@ class QueryBuilderTest extends TestCase
     {
         $this->expectExceptionMessage('MorphTo relations not managed for sorting');
         $query = QueryBuilder::fromInputs([
-            'model' => 'purchase',
+            'entity' => 'purchase',
             'sort' => [
                 [
                     'property' => 'buyer.email',
@@ -835,7 +835,7 @@ class QueryBuilderTest extends TestCase
     {
         $this->expectExceptionMessage('Invalid "to many" sort on property \'friends.id\', it must have aggregation function');
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'friends.id',
@@ -847,7 +847,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_sort_nested_relations_without_subquery()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'friends.posts.tags.id',
@@ -882,7 +882,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_sort_nested_relations_with_subquery()
     {
         $query = QueryBuilder::fromInputs([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'friends.publicPosts.tags.id',

@@ -17,7 +17,7 @@ class RequestGateTest extends TestCase
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'foo' is not filtrable");
         Gate::authorize(new EntityRequest([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'condition',
                 'property' => 'foo',
@@ -31,7 +31,7 @@ class RequestGateTest extends TestCase
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'foo' is not filtrable");
         Gate::authorize(new EntityRequest([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'relationship_condition',
                 'operator' => 'Has',
@@ -45,7 +45,7 @@ class RequestGateTest extends TestCase
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
         Gate::authorize(new EntityRequest([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 ['property' => 'foo'],
             ],
@@ -57,7 +57,7 @@ class RequestGateTest extends TestCase
         $this->expectException(NotScopableException::class);
         $this->expectExceptionMessage("scope 'foobar' is not valid");
         Gate::authorize(new EntityRequest([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'scope',
                 'name' => 'foobar',
@@ -70,7 +70,7 @@ class RequestGateTest extends TestCase
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
         Gate::authorize(new EntityRequest([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'foo.bar',
@@ -84,7 +84,7 @@ class RequestGateTest extends TestCase
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
         Gate::authorize(new EntityRequest([
-            'model' => 'user',
+            'entity' => 'user',
             'sort' => [
                 [
                     'property' => 'posts.foo',
@@ -96,7 +96,7 @@ class RequestGateTest extends TestCase
     public function test_authorize_valid()
     {
         Gate::authorize(new EntityRequest([
-            'model' => 'user',
+            'entity' => 'user',
             'filter' => [
                 'type' => 'group',
                 'operator' => 'and',

@@ -311,7 +311,7 @@ class MakeModelSchemaComandTest extends TestCase
                         "id": "tags",
                         "type": "relationship",
                         "relationship_type": "morph_to_many",
-                        "model": "tag"
+                        "related": "tag"
                     }
                 ],
                 "unique_identifier": "id",
