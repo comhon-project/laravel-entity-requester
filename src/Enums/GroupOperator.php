@@ -4,6 +4,6 @@ namespace Comhon\EntityRequester\Enums;
 
 enum GroupOperator: string
 {
-    case Or = 'OR';
-    case And = 'AND';
+    case Or = 'or';
+    case And = 'and';
 }

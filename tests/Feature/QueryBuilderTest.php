@@ -89,7 +89,7 @@ class QueryBuilderTest extends TestCase
 
         $query = QueryBuilder::fromEntityRequest($entityRequest);
 
-        $sql = 'select * from "users" where "users"."email"::text '.$operator->value.' ? order by "name" asc, "first_name" asc';
+        $sql = 'select * from "users" where "users"."email"::text '.$operator->getSqlOperator().' ? order by "name" asc, "first_name" asc';
         $this->assertEquals($sql, $query->toSql());
     }
 
@@ -102,7 +102,7 @@ class QueryBuilderTest extends TestCase
         $entityRequest->setFilter(new Condition('email', $operator, 'gmail'));
 
         $this->expectException(NotSupportedOperatorException::class);
-        $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, IN, NOT IN, LIKE, NOT LIKE]");
+        $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like]");
         QueryBuilder::fromEntityRequest($entityRequest);
     }
 
@@ -191,7 +191,7 @@ class QueryBuilderTest extends TestCase
             'or not exists (select * from "users" as "laravel_reserved_0" '.
             'inner join "friendships" on "laravel_reserved_0"."id" = "friendships"."to_id" '.
             'where "users"."id" = "friendships"."from_id" and "laravel_reserved_0"."first_name" = \'john\'))) '.
-            'group by "users"."id" order by MAX("alias_posts_1"."name") DESC, "birth_date" asc'
+            'group by "users"."id" order by max("alias_posts_1"."name") desc, "birth_date" asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -253,7 +253,7 @@ class QueryBuilderTest extends TestCase
                     ],
                     [
                         'type' => 'condition',
-                        'operator' => 'not like',
+                        'operator' => 'not_like',
                         'property' => 'email',
                         'value' => '%@gmail.com',
                     ],
@@ -265,7 +265,7 @@ class QueryBuilderTest extends TestCase
                     ],
                     [
                         'type' => 'condition',
-                        'operator' => 'not in',
+                        'operator' => 'not_in',
                         'property' => 'age',
                         'value' => [30, 40],
                     ],
@@ -293,8 +293,8 @@ class QueryBuilderTest extends TestCase
             "\"users\".\"age\" >= 32 $operator ".
             "\"users\".\"age\" < 32 $operator ".
             "\"users\".\"age\" <= 32 $operator ".
-            "\"users\".\"email\" LIKE '%@gmail.com' $operator ".
-            "\"users\".\"email\" NOT LIKE '%@gmail.com' $operator ".
+            "\"users\".\"email\" like '%@gmail.com' $operator ".
+            "\"users\".\"email\" not like '%@gmail.com' $operator ".
             "\"users\".\"age\" in (10, 20) $operator ".
             "\"users\".\"age\" not in (30, 40) $operator ".
             '("users"."age" = 25)'.
@@ -410,7 +410,7 @@ class QueryBuilderTest extends TestCase
             ') '.
             'or "alias_purchases_1"."id" is null '.
             'group by "users"."id" '.
-            'order by COUNT("alias_purchases_1"."amount") ASC'
+            'order by count("alias_purchases_1"."amount") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -485,7 +485,7 @@ class QueryBuilderTest extends TestCase
             'left join "posts" as "alias_posts_1" '.
             'on "users"."id" = "alias_posts_1"."owner_id" '.
             'group by "users"."id" '.
-            'order by COUNT("alias_posts_1"."name") ASC'
+            'order by count("alias_posts_1"."name") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -510,7 +510,7 @@ class QueryBuilderTest extends TestCase
             'left join (select * from "posts" where "posts"."name" = \'public\') as "alias_sub_posts_1" '.
             'on "users"."id" = "alias_sub_posts_1"."owner_id" '.
             'group by "users"."id" '.
-            'order by COUNT("alias_sub_posts_1"."name") ASC'
+            'order by count("alias_sub_posts_1"."name") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -536,7 +536,7 @@ class QueryBuilderTest extends TestCase
             'on "users"."id" = "alias_purchases_1"."buyer_id" '.
             'and "alias_purchases_1"."buyer_type" = \'user\' '.
             'group by "users"."id" '.
-            'order by SUM("alias_purchases_1"."amount") ASC'
+            'order by sum("alias_purchases_1"."amount") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -566,7 +566,7 @@ class QueryBuilderTest extends TestCase
             'and ("purchases"."amount" >= 1000)) as "alias_sub_purchases_1" '.
             'on "users"."id" = "alias_sub_purchases_1"."buyer_id" '.
             'group by "users"."id" '.
-            'order by SUM("alias_sub_purchases_1"."amount") ASC'
+            'order by sum("alias_sub_purchases_1"."amount") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -593,7 +593,7 @@ class QueryBuilderTest extends TestCase
             'inner join "users" as "alias_users_1" '.
             'on "alias_users_1"."id" = "alias_friendships_2"."to_id" '.
             'group by "users"."id" '.
-            'order by COUNT("alias_users_1"."id") ASC'
+            'order by count("alias_users_1"."id") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -624,7 +624,7 @@ class QueryBuilderTest extends TestCase
             'where ("name" = \'validated\')) as "alias_sub_users_1" '.
             'on "users"."id" = "alias_sub_users_1"."alias_from_id_2" '.
             'group by "users"."id" '.
-            'order by COUNT("alias_sub_users_1"."id") ASC'
+            'order by count("alias_sub_users_1"."id") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -652,7 +652,7 @@ class QueryBuilderTest extends TestCase
             'inner join "tags" as "alias_tags_1" '.
             'on "alias_tags_1"."id" = "alias_taggables_2"."tag_id" '.
             'group by "posts"."id" '.
-            'order by AVG("alias_tags_1"."id") ASC'
+            'order by avg("alias_tags_1"."id") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -679,7 +679,7 @@ class QueryBuilderTest extends TestCase
             'and "taggables"."taggable_type" = \'post\' where "tags"."name" = \'public\') as "alias_sub_tags_1" '.
             'on "posts"."id" = "alias_sub_tags_1"."alias_taggable_id_2" '.
             'group by "posts"."id" '.
-            'order by AVG("alias_sub_tags_1"."id") ASC'
+            'order by avg("alias_sub_tags_1"."id") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -714,7 +714,7 @@ class QueryBuilderTest extends TestCase
             'on "alias_posts_1"."id" = "alias_taggables_2"."taggable_id" '.
             'and "alias_posts_1"."name" = \'public\' '.
             'group by "tags"."id" '.
-            'order by MIN("alias_posts_1"."name") ASC'
+            'order by min("alias_posts_1"."name") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -745,7 +745,7 @@ class QueryBuilderTest extends TestCase
             'and "taggables"."taggable_type" = \'post\' where ("posts"."name" = \'validated\')) as "alias_sub_posts_1" '.
             'on "tags"."id" = "alias_sub_posts_1"."alias_tag_id_2" '.
             'group by "tags"."id" '.
-            'order by MIN("alias_sub_posts_1"."name") ASC'
+            'order by min("alias_sub_posts_1"."name") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -779,7 +779,7 @@ class QueryBuilderTest extends TestCase
             'on "alias_users_1"."id" = "alias_posts_2"."owner_id" '.
             'and "alias_posts_2"."name" = \'foo\' '.
             'group by "users"."id" '.
-            'order by COUNT("alias_posts_2"."name") ASC'
+            'order by count("alias_posts_2"."name") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -810,7 +810,7 @@ class QueryBuilderTest extends TestCase
             'where ("posts"."name" = \'validated\')) as "alias_sub_posts_1" '.
             'on "users"."id" = "alias_sub_posts_1"."alias_parent_id_2" '.
             'group by "users"."id" '.
-            'order by COUNT("alias_sub_posts_1"."name") ASC'
+            'order by count("alias_sub_posts_1"."name") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -871,7 +871,7 @@ class QueryBuilderTest extends TestCase
             'and "alias_taggables_5"."taggable_type" = \'post\' '.
             'inner join "tags" as "alias_tags_4" on "alias_tags_4"."id" = "alias_taggables_5"."tag_id" '.
             'and "alias_tags_4"."name" = \'foo\' '.
-            'group by "users"."id" order by COUNT("alias_tags_4"."id") ASC'
+            'group by "users"."id" order by count("alias_tags_4"."id") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -908,7 +908,7 @@ class QueryBuilderTest extends TestCase
             'and "taggables"."taggable_type" = \'post\' where ("name" = \'validated\')) as "alias_sub_tags_4" '.
             'on "alias_sub_posts_3"."id" = "alias_sub_tags_4"."alias_taggable_id_5" '.
             'group by "users"."id" '.
-            'order by COUNT("alias_sub_tags_4"."id") ASC'
+            'order by count("alias_sub_tags_4"."id") asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 

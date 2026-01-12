@@ -165,7 +165,7 @@ class EntityRequest
             if (! is_string($filter['operator'])) {
                 throw new InvalidConditionOperatorException($this->getStack('operator', $stack));
             }
-            $operator = ConditionOperator::tryFrom(strtoupper($filter['operator']));
+            $operator = ConditionOperator::tryFrom(strtolower($filter['operator']));
             if (! $operator || ! $operator->isSupported()) {
                 throw new InvalidConditionOperatorException($this->getStack('operator', $stack));
             }
@@ -189,7 +189,7 @@ class EntityRequest
         if (! is_string($filter['operator'])) {
             throw new EnumValueException($this->getStack('operator', $stack), GroupOperator::class);
         }
-        $operator = GroupOperator::tryFrom(strtoupper($filter['operator']));
+        $operator = GroupOperator::tryFrom(strtolower($filter['operator']));
         if (! $operator) {
             throw new EnumValueException($this->getStack('operator', $stack), GroupOperator::class);
         }
@@ -224,7 +224,7 @@ class EntityRequest
         if (! is_string($filter['operator'])) {
             throw new EnumValueException($this->getStack('operator', $stack), RelationshipConditionOperator::class);
         }
-        $operator = RelationshipConditionOperator::tryFrom(strtoupper($filter['operator']));
+        $operator = RelationshipConditionOperator::tryFrom(strtolower($filter['operator']));
         if (! $operator) {
             throw new EnumValueException($this->getStack('operator', $stack), RelationshipConditionOperator::class);
         }
@@ -233,7 +233,7 @@ class EntityRequest
             if (! is_string($filter['count_operator'])) {
                 throw new EnumValueException($this->getStack('count_operator', $stack), MathOperator::class);
             }
-            $countOperator = MathOperator::tryFrom(strtoupper($filter['count_operator']));
+            $countOperator = MathOperator::tryFrom($filter['count_operator']);
             if (! $countOperator) {
                 throw new EnumValueException($this->getStack('count_operator', $stack), MathOperator::class);
             }
@@ -310,7 +310,7 @@ class EntityRequest
             if (! is_string($sort['order'])) {
                 throw new EnumValueException($this->getStack('order', $stack), OrderDirection::class);
             }
-            $order = OrderDirection::tryFrom(strtoupper($sort['order']));
+            $order = OrderDirection::tryFrom(strtolower($sort['order']));
             if (! $order) {
                 throw new EnumValueException($this->getStack('order', $stack), OrderDirection::class);
             }
@@ -330,7 +330,7 @@ class EntityRequest
             if (! is_string($sort['aggregation'])) {
                 throw new EnumValueException($this->getStack('aggregation', $stack), AggregationFunction::class);
             }
-            $aggregation = AggregationFunction::tryFrom(strtoupper($sort['aggregation']));
+            $aggregation = AggregationFunction::tryFrom(strtolower($sort['aggregation']));
             if (! $aggregation) {
                 throw new EnumValueException($this->getStack('aggregation', $stack), AggregationFunction::class);
             }

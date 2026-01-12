@@ -10,12 +10,22 @@ enum ConditionOperator: string
     case LessThanOrEqual = '<=';
     case GreaterThan = '>';
     case GreaterThanOrEqual = '>=';
-    case In = 'IN';
-    case NotIn = 'NOT IN';
-    case Like = 'LIKE';
-    case NotLike = 'NOT LIKE';
-    case Ilike = 'ILIKE';
-    case NotIlike = 'NOT ILIKE';
+    case In = 'in';
+    case NotIn = 'not_in';
+    case Like = 'like';
+    case NotLike = 'not_like';
+    case Ilike = 'ilike';
+    case NotIlike = 'not_ilike';
+
+    public function getSqlOperator(): string
+    {
+        return match ($this) {
+            self::In, self::NotIn => throw new \LogicException("Operator {$this->value} must use whereIn/whereNotIn methods"),
+            self::NotLike => 'not like',
+            self::NotIlike => 'not ilike',
+            default => $this->value,
+        };
+    }
 
     public function isSupported(): string
     {

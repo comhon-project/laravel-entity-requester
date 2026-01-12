@@ -4,6 +4,6 @@ namespace Comhon\EntityRequester\Enums;
 
 enum OrderDirection: string
 {
-    case Asc = 'ASC';
-    case Desc = 'DESC';
+    case Asc = 'asc';
+    case Desc = 'desc';
 }

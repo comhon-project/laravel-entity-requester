@@ -54,8 +54,8 @@ class TestCase extends Orchestra
         }
         if ($driver == 'pgsql') {
             $rawSql = str_replace(
-                ['" LIKE ', '" NOT LIKE ', '" ILIKE ', '" NOT ILIKE '],
-                ['"::text LIKE ', '"::text NOT LIKE ', '"::text ILIKE ', '"::text NOT ILIKE '],
+                ['" like ', '" not like ', '" ilike ', '" not ilike '],
+                ['"::text like ', '"::text not like ', '"::text ilike ', '"::text not ilike '],
                 $rawSql
             );
         }

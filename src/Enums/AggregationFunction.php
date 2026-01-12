@@ -4,9 +4,9 @@ namespace Comhon\EntityRequester\Enums;
 
 enum AggregationFunction: string
 {
-    case Count = 'COUNT';
-    case Sum = 'SUM';
-    case Avg = 'AVG';
-    case Min = 'MIN';
-    case Max = 'MAX';
+    case Count = 'count';
+    case Sum = 'sum';
+    case Avg = 'avg';
+    case Min = 'min';
+    case Max = 'max';
 }

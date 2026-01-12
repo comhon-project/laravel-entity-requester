@@ -79,7 +79,7 @@ class QueryBuilder
             }
         } elseif ($defaultSort = $schema->getDefaultSort()) {
             foreach ($defaultSort as $sort) {
-                $query->orderBy($sort['property'], $sort['order'] ?? 'ASC');
+                $query->orderBy($sort['property'], $sort['order'] ?? 'asc');
             }
         } else {
             $query->orderBy($query->getModel()->getKeyName());
@@ -137,7 +137,7 @@ class QueryBuilder
             } elseif ($condition->getOperator() == ConditionOperator::NotIn) {
                 $query->whereNotIn($column, $value);
             } else {
-                $query->where($column, $condition->getOperator()->value, $value);
+                $query->where($column, $condition->getOperator()->getSqlOperator(), $value);
             }
         } else {
             if ($condition->getOperator() == ConditionOperator::In) {
@@ -145,7 +145,7 @@ class QueryBuilder
             } elseif ($condition->getOperator() == ConditionOperator::NotIn) {
                 $query->orWhereNotIn($column, $value);
             } else {
-                $query->orWhere($column, $condition->getOperator()->value, $value);
+                $query->orWhere($column, $condition->getOperator()->getSqlOperator(), $value);
             }
         }
     }

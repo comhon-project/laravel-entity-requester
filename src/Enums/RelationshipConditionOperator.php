@@ -4,6 +4,6 @@ namespace Comhon\EntityRequester\Enums;
 
 enum RelationshipConditionOperator: string
 {
-    case Has = 'HAS';
-    case HasNot = 'HAS_NOT';
+    case Has = 'has';
+    case HasNot = 'has_not';
 }
