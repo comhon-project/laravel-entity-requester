@@ -9,6 +9,7 @@ use Comhon\EntityRequester\Database\AliasCounter;
 use Comhon\EntityRequester\DTOs\Condition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\Enums\ConditionOperator;
+use Comhon\EntityRequester\Exceptions\InvalidOperatorForPropertyTypeException;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
 use Comhon\EntityRequester\Facades\QueryBuilder;
@@ -89,7 +90,8 @@ class QueryBuilderTest extends TestCase
 
         $query = QueryBuilder::fromEntityRequest($entityRequest);
 
-        $sql = 'select * from "users" where "users"."email"::text '.$operator->getSqlOperator().' ? order by "name" asc, "first_name" asc';
+        $sqlOperator = app(\Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface::class)->getSqlOperator($operator);
+        $sql = 'select * from "users" where "users"."email"::text '.$sqlOperator.' ? order by "name" asc, "first_name" asc';
         $this->assertEquals($sql, $query->toSql());
     }
 
@@ -102,7 +104,7 @@ class QueryBuilderTest extends TestCase
         $entityRequest->setFilter(new Condition('email', $operator, 'gmail'));
 
         $this->expectException(NotSupportedOperatorException::class);
-        $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like]");
+        $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains]");
         QueryBuilder::fromEntityRequest($entityRequest);
     }
 
@@ -877,6 +879,75 @@ class QueryBuilderTest extends TestCase
 
         // just verify that query works and doesn't throw exception
         $query->get();
+    }
+
+    #[DataProvider('providerBoolean')]
+    public function test_build_entity_request_contains_operators(bool $and)
+    {
+        $operator = $and ? 'and' : 'or';
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'group',
+                'operator' => $operator,
+                'filters' => [
+                    [
+                        'type' => 'condition',
+                        'operator' => 'contains',
+                        'property' => 'favorite_fruits',
+                        'value' => Fruit::Apple->value,
+                    ],
+                    [
+                        'type' => 'condition',
+                        'operator' => 'not_contains',
+                        'property' => 'favorite_fruits',
+                        'value' => Fruit::Orange->value,
+                    ],
+                ],
+            ],
+        ]);
+
+        $connectionName = config('database.default');
+        $driver = config("database.connections.{$connectionName}.driver");
+
+        if ($driver === 'sqlite') {
+            $containsSql = 'exists (select 1 from json_each("users"."favorite_fruits") where "json_each"."value" is \''.Fruit::Apple->value.'\')';
+            $notContainsSql = 'not exists (select 1 from json_each("users"."favorite_fruits") where "json_each"."value" is \''.Fruit::Orange->value.'\')';
+        } elseif ($driver === 'pgsql') {
+            $containsSql = '("users"."favorite_fruits")::jsonb @> \'"'.Fruit::Apple->value.'"\'';
+            $notContainsSql = 'not ("users"."favorite_fruits")::jsonb @> \'"'.Fruit::Orange->value.'"\'';
+        } else {
+            $containsSql = 'json_contains(`users`.`favorite_fruits`, \'"'.Fruit::Apple->value.'"\')';
+            $notContainsSql = 'not json_contains(`users`.`favorite_fruits`, \'"'.Fruit::Orange->value.'"\')';
+        }
+
+        $rawSql = 'select * from "users" where ('.$containsSql.' '.$operator.' '.$notContainsSql.') order by "name" asc, "first_name" asc';
+        if ($driver !== 'sqlite' && $driver !== 'pgsql') {
+            $rawSql = str_replace('"users"', '`users`', $rawSql);
+        }
+
+        $this->assertEquals($rawSql, $query->toRawSql());
+        $query->get();
+    }
+
+    public function test_build_entity_request_scalar_operator_on_array_property_throws()
+    {
+        $this->expectException(InvalidOperatorForPropertyTypeException::class);
+        $this->expectExceptionMessage("Condition operator '=' is not valid for 'array' property type, must be one of [contains, not_contains]");
+
+        $entityRequest = new EntityRequest(null, User::class);
+        $entityRequest->setFilter(new Condition('favorite_fruits', ConditionOperator::Equal, 'apple'));
+        QueryBuilder::fromEntityRequest($entityRequest);
+    }
+
+    public function test_build_entity_request_contains_on_non_array_property_throws()
+    {
+        $this->expectException(InvalidOperatorForPropertyTypeException::class);
+        $this->expectExceptionMessage("Condition operator 'contains' is not valid for 'string' property type");
+
+        $entityRequest = new EntityRequest(null, User::class);
+        $entityRequest->setFilter(new Condition('name', ConditionOperator::Contains, 'john'));
+        QueryBuilder::fromEntityRequest($entityRequest);
     }
 
     public function test_build_entity_sort_nested_relations_with_subquery()

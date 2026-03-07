@@ -13,6 +13,7 @@ use Comhon\EntityRequester\Exceptions\EnumValueException;
 use Comhon\EntityRequester\Exceptions\InvalidConditionOperatorException;
 use Comhon\EntityRequester\Exceptions\MalformedValueException;
 use Comhon\EntityRequester\Exceptions\MissingValueException;
+use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use Illuminate\Database\Eloquent\Model;
 
@@ -166,7 +167,7 @@ class EntityRequest
                 throw new InvalidConditionOperatorException($this->getStack('operator', $stack));
             }
             $operator = ConditionOperator::tryFrom(strtolower($filter['operator']));
-            if (! $operator || ! $operator->isSupported()) {
+            if (! $operator || ! app(ConditionOperatorManagerInterface::class)->isSupported($operator)) {
                 throw new InvalidConditionOperatorException($this->getStack('operator', $stack));
             }
         }
@@ -174,8 +175,21 @@ class EntityRequest
             throw new MissingValueException($this->getStack('value', $stack));
         }
         $needArrayValue = $operator == ConditionOperator::In || $operator == ConditionOperator::NotIn;
-        if ($needArrayValue && ! is_array($filter['value'])) {
-            throw new MalformedValueException($this->getStack('value', $stack), 'array');
+        $acceptBothTypes = $operator == ConditionOperator::Contains || $operator == ConditionOperator::NotContains;
+        $value = $filter['value'];
+        $isScalar = is_scalar($value) || is_null($value);
+
+        if ($needArrayValue || ($acceptBothTypes && ! $isScalar)) {
+            if (! is_array($value)) {
+                throw new MalformedValueException($this->getStack('value', $stack), 'array');
+            }
+            foreach ($value as $item) {
+                if (! is_scalar($item) && ! is_null($item)) {
+                    throw new MalformedValueException($this->getStack('value', $stack), 'array of scalars');
+                }
+            }
+        } elseif (! $isScalar) {
+            throw new MalformedValueException($this->getStack('value', $stack), 'scalar');
         }
 
         return new Condition($filter['property'], $operator, $filter['value']);

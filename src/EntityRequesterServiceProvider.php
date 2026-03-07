@@ -3,10 +3,12 @@
 namespace Comhon\EntityRequester;
 
 use Comhon\EntityRequester\Commands\MakeModelSchema;
+use Comhon\EntityRequester\EntityRequest\ConditionOperatorManager;
 use Comhon\EntityRequester\EntityRequest\Gate;
 use Comhon\EntityRequester\Factories\EntitySchemaFactory;
 use Comhon\EntityRequester\Factories\EnumSchemaFactory;
 use Comhon\EntityRequester\Factories\RequestSchemaFactory;
+use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Comhon\EntityRequester\Interfaces\EnumSchemaFactoryInterface;
 use Comhon\EntityRequester\Interfaces\RequestGateInterface;
@@ -31,6 +33,7 @@ class EntityRequesterServiceProvider extends PackageServiceProvider
 
     public function packageRegistered()
     {
+        $this->app->singletonIf(ConditionOperatorManagerInterface::class, ConditionOperatorManager::class);
         $this->app->singletonIf(EntitySchemaFactoryInterface::class, EntitySchemaFactory::class);
         $this->app->singletonIf(RequestSchemaFactoryInterface::class, RequestSchemaFactory::class);
         $this->app->singletonIf(EnumSchemaFactoryInterface::class, EnumSchemaFactory::class);

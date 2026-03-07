@@ -14,9 +14,11 @@ use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Enums\RelationshipConditionOperator;
+use Comhon\EntityRequester\Exceptions\InvalidOperatorForPropertyTypeException;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
+use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,7 +37,10 @@ use ReflectionMethod;
 
 class QueryBuilder
 {
-    public function __construct(private EntitySchemaFactoryInterface $entitySchemaFactory) {}
+    public function __construct(
+        private EntitySchemaFactoryInterface $entitySchemaFactory,
+        private ConditionOperatorManagerInterface $operatorManager,
+    ) {}
 
     /**
      * transform given inputs to query builder
@@ -126,26 +131,43 @@ class QueryBuilder
 
         $column = "$table.$propertyId";
         $value = $condition->getValue();
+        $operator = $condition->getOperator();
 
-        if (! $condition->getOperator()->isSupported()) {
-            throw new NotSupportedOperatorException($condition->getOperator());
+        $property = $schema->getProperty($propertyId);
+        $propertyType = $property['type'];
+        $allowedOperators = $this->operatorManager->getOperatorsForPropertyType($propertyType);
+
+        if (! in_array($operator, $allowedOperators)) {
+            throw new InvalidOperatorForPropertyTypeException($operator, $propertyType, $allowedOperators);
+        }
+
+        if (! $this->operatorManager->isSupported($operator)) {
+            throw new NotSupportedOperatorException($operator);
         }
 
         if ($and) {
-            if ($condition->getOperator() == ConditionOperator::In) {
+            if ($operator === ConditionOperator::In) {
                 $query->whereIn($column, $value);
-            } elseif ($condition->getOperator() == ConditionOperator::NotIn) {
+            } elseif ($operator === ConditionOperator::NotIn) {
                 $query->whereNotIn($column, $value);
+            } elseif ($operator === ConditionOperator::Contains) {
+                $query->whereJsonContains($column, $value);
+            } elseif ($operator === ConditionOperator::NotContains) {
+                $query->whereJsonDoesntContain($column, $value);
             } else {
-                $query->where($column, $condition->getOperator()->getSqlOperator(), $value);
+                $query->where($column, $this->operatorManager->getSqlOperator($operator), $value);
             }
         } else {
-            if ($condition->getOperator() == ConditionOperator::In) {
+            if ($operator === ConditionOperator::In) {
                 $query->orWhereIn($column, $value);
-            } elseif ($condition->getOperator() == ConditionOperator::NotIn) {
+            } elseif ($operator === ConditionOperator::NotIn) {
                 $query->orWhereNotIn($column, $value);
+            } elseif ($operator === ConditionOperator::Contains) {
+                $query->orWhereJsonContains($column, $value);
+            } elseif ($operator === ConditionOperator::NotContains) {
+                $query->orWhereJsonDoesntContain($column, $value);
             } else {
-                $query->orWhere($column, $condition->getOperator()->getSqlOperator(), $value);
+                $query->orWhere($column, $this->operatorManager->getSqlOperator($operator), $value);
             }
         }
     }

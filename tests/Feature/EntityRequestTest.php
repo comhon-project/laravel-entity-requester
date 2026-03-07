@@ -172,9 +172,9 @@ class EntityRequestTest extends TestCase
     #[DataProvider('provider_build_entity_request_invalid')]
     public function test_instanciate_entity_request_invalid($data, $error)
     {
-        $isConditionOperatorError = $error == "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like]";
+        $isConditionOperatorError = $error == "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains]";
         if ($isConditionOperatorError && config('database.default') == 'pgsql') {
-            $error = str_replace(']', ', ilike, not_ilike]', $error);
+            $error = str_replace(', contains, not_contains]', ', ilike, not_ilike, contains, not_contains]', $error);
         }
 
         $this->expectExceptionMessage($error);
@@ -242,15 +242,39 @@ class EntityRequestTest extends TestCase
             ],
             [
                 ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'foo']],
-                "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like]",
+                "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains]",
             ],
             [
                 ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => ['foo']]],
-                "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like]",
+                "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains]",
             ],
             [
                 ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'in', 'value' => 123]],
                 "Invalid property 'filter.value', must be a array",
+            ],
+            [
+                ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'not_in', 'value' => 'foo']],
+                "Invalid property 'filter.value', must be a array",
+            ],
+            [
+                ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => '=', 'value' => [1, 2]]],
+                "Invalid property 'filter.value', must be a scalar",
+            ],
+            [
+                ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => '<>', 'value' => ['a']]],
+                "Invalid property 'filter.value', must be a scalar",
+            ],
+            [
+                ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'like', 'value' => [1]]],
+                "Invalid property 'filter.value', must be a scalar",
+            ],
+            [
+                ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'in', 'value' => [1, [2]]]],
+                "Invalid property 'filter.value', must be a array of scalars",
+            ],
+            [
+                ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'contains', 'value' => [[1]]]],
+                "Invalid property 'filter.value', must be a array of scalars",
             ],
             [
                 ['filter' => ['type' => 'scope']],
@@ -353,6 +377,42 @@ class EntityRequestTest extends TestCase
                 "Invalid property 'sort.0.aggregation', must be one of [count, sum, avg, min, max]",
             ],
         ];
+    }
+
+    public function test_instanciate_entity_request_contains_scalar_value()
+    {
+        $entityRequest = new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => 'contains',
+                'property' => 'foo',
+                'value' => 'apple',
+            ],
+        ]);
+
+        $filter = $entityRequest->getFilter();
+        $this->assertInstanceOf(Condition::class, $filter);
+        $this->assertEquals(ConditionOperator::Contains, $filter->getOperator());
+        $this->assertEquals('apple', $filter->getValue());
+    }
+
+    public function test_instanciate_entity_request_contains_array_value()
+    {
+        $entityRequest = new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => 'contains',
+                'property' => 'foo',
+                'value' => ['apple', 'banana'],
+            ],
+        ]);
+
+        $filter = $entityRequest->getFilter();
+        $this->assertInstanceOf(Condition::class, $filter);
+        $this->assertEquals(ConditionOperator::Contains, $filter->getOperator());
+        $this->assertEquals(['apple', 'banana'], $filter->getValue());
     }
 
     #[DataProvider('providerBoolean')]
