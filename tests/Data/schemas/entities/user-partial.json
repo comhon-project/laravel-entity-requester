@@ -68,7 +68,7 @@
                     "id": "foo",
                     "name": "foo",
                     "type": "array",
-                    "children": { "type": "integer" }
+                    "items": { "type": "integer" }
                 }
             ]
         }

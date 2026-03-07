@@ -276,7 +276,7 @@ class MakeModelSchema extends Command
         if (str_contains($castType, AsEnumCollection::class)) {
             $typeInfos['type'] = 'array';
             $enumClass = explode(':', $castType)[1];
-            $typeInfos['children'] = $this->getTypeInfosFromCast($enumClass, $enumSchemas);
+            $typeInfos['items'] = $this->getTypeInfosFromCast($enumClass, $enumSchemas);
 
             return $typeInfos;
         }

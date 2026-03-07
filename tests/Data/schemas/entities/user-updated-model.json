@@ -71,7 +71,7 @@
         {
             "id": "favorite_fruits",
             "type": "array",
-            "children": {
+            "items": {
                 "type": "string",
                 "enum": "fruit"
             },
@@ -214,7 +214,7 @@
                     "id": "foo",
                     "name": "foo",
                     "type": "array",
-                    "children": { "type": "integer" }
+                    "items": { "type": "integer" }
                 }
             ]
         }
