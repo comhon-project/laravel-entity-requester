@@ -27,6 +27,8 @@ abstract class AbstractJsonFileFactory implements CacheableInterface, Responsabl
 
     public function get(string $id): object
     {
+        $id = $this->resolveId($id);
+
         if (! isset($this->collection[$id])) {
             $loader = function () use ($id) {
                 $data = json_decode($this->getJson($id), true);
@@ -43,13 +45,7 @@ abstract class AbstractJsonFileFactory implements CacheableInterface, Responsabl
 
     public function getJson(string $id): string
     {
-        $id = str_contains($id, '\\')
-            ? app(ModelResolverInterface::class)->getUniqueName($id)
-            : $id;
-
-        if ($id === null) {
-            throw new \Exception("model $id doesn't have unique name");
-        }
+        $id = $this->resolveId($id);
 
         $loader = function () use ($id) {
             try {
@@ -78,6 +74,7 @@ abstract class AbstractJsonFileFactory implements CacheableInterface, Responsabl
     public function refresh(?string $id = null): void
     {
         if ($id !== null) {
+            $id = $this->resolveId($id);
             $this->getCache()->forget("entity-requester::{$this->getName()}-object::{$id}");
             $this->getCache()->forget("entity-requester::{$this->getName()}-json::{$id}");
         } elseif ($this->getCache() instanceof TaggedCache) {
@@ -104,5 +101,15 @@ abstract class AbstractJsonFileFactory implements CacheableInterface, Responsabl
     public function getPath(string $id): string
     {
         return $this->getDirectory().DIRECTORY_SEPARATOR.$id.'.json';
+    }
+
+    private function resolveId(string $id): string
+    {
+        if (! str_contains($id, '\\')) {
+            return $id;
+        }
+
+        return app(ModelResolverInterface::class)->getUniqueName($id)
+            ?? throw new \Exception("model $id doesn't have unique name");
     }
 }

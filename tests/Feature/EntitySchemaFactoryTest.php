@@ -177,7 +177,7 @@ class EntitySchemaFactoryTest extends TestCase
 
     public function test_get_schema_unique_name_doesnt_exist()
     {
-        $this->expectExceptionMessage("model  doesn't have unique name");
+        $this->expectExceptionMessage("model App\Models\MyModel doesn't have unique name");
         app(EntitySchemaFactoryInterface::class)->get('App\Models\MyModel');
     }
 }
