@@ -29,6 +29,7 @@ return new class extends Migration
             $table->text('comment')->nullable();
             $table->unsignedTinyInteger('status')->nullable();
             $table->string('favorite_fruits', 15)->nullable();
+            $table->json('metadata')->nullable();
             $table->boolean('has_consumer_ability')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->foreignId('parent_id')->nullable()->constrained('users');

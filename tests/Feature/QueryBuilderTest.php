@@ -104,7 +104,7 @@ class QueryBuilderTest extends TestCase
         $entityRequest->setFilter(new Condition('email', $operator, 'gmail'));
 
         $this->expectException(NotSupportedOperatorException::class);
-        $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains]");
+        $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains, has_key, has_not_key]");
         QueryBuilder::fromEntityRequest($entityRequest);
     }
 
@@ -917,13 +917,14 @@ class QueryBuilderTest extends TestCase
             $containsSql = '("users"."favorite_fruits")::jsonb @> \'"'.Fruit::Apple->value.'"\'';
             $notContainsSql = 'not ("users"."favorite_fruits")::jsonb @> \'"'.Fruit::Orange->value.'"\'';
         } else {
-            $containsSql = 'json_contains(`users`.`favorite_fruits`, \'"'.Fruit::Apple->value.'"\')';
-            $notContainsSql = 'not json_contains(`users`.`favorite_fruits`, \'"'.Fruit::Orange->value.'"\')';
+            $containsSql = 'json_contains(`users`.`favorite_fruits`, \'\"'.Fruit::Apple->value.'\"\')';
+            $notContainsSql = 'not json_contains(`users`.`favorite_fruits`, \'\"'.Fruit::Orange->value.'\"\')';
         }
 
-        $rawSql = 'select * from "users" where ('.$containsSql.' '.$operator.' '.$notContainsSql.') order by "name" asc, "first_name" asc';
         if ($driver !== 'sqlite' && $driver !== 'pgsql') {
-            $rawSql = str_replace('"users"', '`users`', $rawSql);
+            $rawSql = 'select * from `users` where ('.$containsSql.' '.$operator.' '.$notContainsSql.') order by `name` asc, `first_name` asc';
+        } else {
+            $rawSql = 'select * from "users" where ('.$containsSql.' '.$operator.' '.$notContainsSql.') order by "name" asc, "first_name" asc';
         }
 
         $this->assertEquals($rawSql, $query->toRawSql());
@@ -948,6 +949,110 @@ class QueryBuilderTest extends TestCase
         $entityRequest = new EntityRequest(null, User::class);
         $entityRequest->setFilter(new Condition('name', ConditionOperator::Contains, 'john'));
         QueryBuilder::fromEntityRequest($entityRequest);
+    }
+
+    public function test_build_entity_request_dot_notation_filter()
+    {
+        $entityRequest = new EntityRequest(null, User::class);
+        $entityRequest->setFilter(new Condition('metadata.address.city', ConditionOperator::Equal, 'Paris'));
+        $query = QueryBuilder::fromEntityRequest($entityRequest);
+
+        $rawSql = $query->toRawSql();
+        $this->assertStringContainsString('metadata', $rawSql);
+        $this->assertStringContainsString('address', $rawSql);
+        $this->assertStringContainsString('city', $rawSql);
+        $this->assertStringContainsString('Paris', $rawSql);
+        $query->get();
+    }
+
+    #[DataProvider('providerBoolean')]
+    public function test_build_entity_request_dot_notation_two_levels(bool $and)
+    {
+        $operator = $and ? 'and' : 'or';
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'group',
+                'operator' => $operator,
+                'filters' => [
+                    [
+                        'type' => 'condition',
+                        'operator' => '=',
+                        'property' => 'metadata.address.city',
+                        'value' => 'Paris',
+                    ],
+                    [
+                        'type' => 'condition',
+                        'operator' => '<>',
+                        'property' => 'metadata.address.zip',
+                        'value' => '75000',
+                    ],
+                ],
+            ],
+        ]);
+
+        $rawSql = $query->toRawSql();
+        $this->assertStringContainsString('metadata', $rawSql);
+        $this->assertStringContainsString('city', $rawSql);
+        $this->assertStringContainsString('Paris', $rawSql);
+        $this->assertStringContainsString('zip', $rawSql);
+        $this->assertStringContainsString('75000', $rawSql);
+        $query->get();
+    }
+
+    public function test_build_entity_request_dot_notation_one_level()
+    {
+        $entityRequest = new EntityRequest(null, User::class);
+        $entityRequest->setFilter(new Condition('metadata.label', ConditionOperator::Like, '%test%'));
+        $query = QueryBuilder::fromEntityRequest($entityRequest);
+
+        $rawSql = $query->toRawSql();
+        $this->assertStringContainsString('metadata', $rawSql);
+        $this->assertStringContainsString('label', $rawSql);
+        $query->get();
+    }
+
+    public function test_build_entity_request_object_type_invalid_operator()
+    {
+        $this->expectException(InvalidOperatorForPropertyTypeException::class);
+        $this->expectExceptionMessage("Condition operator '=' is not valid for 'object' property type, must be one of [has_key, has_not_key]");
+
+        $entityRequest = new EntityRequest(null, User::class);
+        $entityRequest->setFilter(new Condition('metadata', ConditionOperator::Equal, 'test'));
+        QueryBuilder::fromEntityRequest($entityRequest);
+    }
+
+    #[DataProvider('providerBoolean')]
+    public function test_build_entity_request_has_key(bool $and)
+    {
+        $operator = $and ? 'and' : 'or';
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'group',
+                'operator' => $operator,
+                'filters' => [
+                    [
+                        'type' => 'condition',
+                        'operator' => 'has_key',
+                        'property' => 'metadata',
+                        'value' => 'address',
+                    ],
+                    [
+                        'type' => 'condition',
+                        'operator' => 'has_not_key',
+                        'property' => 'metadata',
+                        'value' => 'label',
+                    ],
+                ],
+            ],
+        ]);
+
+        $rawSql = $query->toRawSql();
+        $this->assertStringContainsString('metadata', $rawSql);
+        $this->assertStringContainsString('address', $rawSql);
+        $this->assertStringContainsString('label', $rawSql);
+        $query->get();
     }
 
     public function test_build_entity_sort_nested_relations_with_subquery()

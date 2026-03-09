@@ -175,6 +175,18 @@ class EntitySchemaFactoryTest extends TestCase
         app(EntitySchemaFactoryInterface::class)->get('foo');
     }
 
+    public function test_get_child_schema_registers_via_parent()
+    {
+        $factory = app(EntitySchemaFactoryInterface::class);
+        $factory->get('user');
+
+        $childSchema = $factory->get('user.metadata');
+
+        $this->assertInstanceOf(EntitySchema::class, $childSchema);
+        $this->assertTrue($childSchema->hasProperty('address'));
+        $this->assertTrue($childSchema->hasProperty('label'));
+    }
+
     public function test_get_schema_unique_name_doesnt_exist()
     {
         $this->expectExceptionMessage("model App\Models\MyModel doesn't have unique name");

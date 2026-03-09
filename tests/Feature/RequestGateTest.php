@@ -163,4 +163,34 @@ class RequestGateTest extends TestCase
         // request is valid so nothing happens
         $this->assertTrue(true);
     }
+
+    public function test_authorize_dot_notation_uses_root_property()
+    {
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => '=',
+                'property' => 'metadata.address.city',
+                'value' => 'Paris',
+            ],
+        ]));
+
+        $this->assertTrue(true);
+    }
+
+    public function test_authorize_dot_notation_not_filtrable_root()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'password' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => '=',
+                'property' => 'password.something',
+                'value' => 'test',
+            ],
+        ]));
+    }
 }

@@ -129,12 +129,13 @@ class QueryBuilder
                 : $query->getModel()->getTable();
         }
 
-        $column = "$table.$propertyId";
         $value = $condition->getValue();
         $operator = $condition->getOperator();
 
-        $property = $schema->getProperty($propertyId);
-        $propertyType = $property['type'];
+        $segments = explode('.', $propertyId);
+        $column = "$table.".implode('->', $segments);
+        $propertyType = $this->resolvePropertyType($schema, $segments);
+
         $allowedOperators = $this->operatorManager->getOperatorsForPropertyType($propertyType);
 
         if (! in_array($operator, $allowedOperators)) {
@@ -154,6 +155,10 @@ class QueryBuilder
                 $query->whereJsonContains($column, $value);
             } elseif ($operator === ConditionOperator::NotContains) {
                 $query->whereJsonDoesntContain($column, $value);
+            } elseif ($operator === ConditionOperator::HasKey) {
+                $query->whereJsonContainsKey($column.'->'.$value);
+            } elseif ($operator === ConditionOperator::HasNotKey) {
+                $query->whereJsonDoesntContainKey($column.'->'.$value);
             } else {
                 $query->where($column, $this->operatorManager->getSqlOperator($operator), $value);
             }
@@ -166,10 +171,32 @@ class QueryBuilder
                 $query->orWhereJsonContains($column, $value);
             } elseif ($operator === ConditionOperator::NotContains) {
                 $query->orWhereJsonDoesntContain($column, $value);
+            } elseif ($operator === ConditionOperator::HasKey) {
+                $query->orWhereJsonContainsKey($column.'->'.$value);
+            } elseif ($operator === ConditionOperator::HasNotKey) {
+                $query->orWhereJsonDoesntContainKey($column.'->'.$value);
             } else {
                 $query->orWhere($column, $this->operatorManager->getSqlOperator($operator), $value);
             }
         }
+    }
+
+    private function resolvePropertyType(EntitySchema $schema, array $segments): string
+    {
+        $currentSchema = $schema;
+        $lastIndex = count($segments) - 1;
+        $lastType = null;
+
+        foreach ($segments as $i => $segment) {
+            $property = $currentSchema->getProperty($segment);
+            $lastType = $property['type'];
+
+            if ($i < $lastIndex) {
+                $currentSchema = $this->entitySchemaFactory->get($property['entity']);
+            }
+        }
+
+        return $lastType;
     }
 
     /**

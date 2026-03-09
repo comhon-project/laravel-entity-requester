@@ -12,7 +12,7 @@ class EntitySchemaTest extends TestCase
         $schema = app(EntitySchemaFactoryInterface::class)->get('user');
 
         $this->assertEquals('user', $schema->getId());
-        $this->assertCount(21, $schema->getProperties());
+        $this->assertCount(22, $schema->getProperties());
 
         $property = ['id' => 'name', 'type' => 'string', 'nullable' => false];
         $this->assertEquals($property, $schema->getProperty('name'));

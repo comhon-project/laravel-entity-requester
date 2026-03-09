@@ -78,6 +78,12 @@
             "nullable": true
         },
         {
+            "id": "metadata",
+            "type": "object",
+            "entity": "user.metadata",
+            "nullable": true
+        },
+        {
             "id": "has_consumer_ability",
             "type": "boolean",
             "nullable": false
@@ -205,5 +211,36 @@
             ]
         }
     ],
-    "default_sort": [{ "property": "name" }, { "property": "first_name" }]
+    "default_sort": [{ "property": "name" }, { "property": "first_name" }],
+    "entities": {
+        "metadata": {
+            "properties": [
+                {
+                    "id": "label",
+                    "type": "string",
+                    "nullable": true
+                },
+                {
+                    "id": "address",
+                    "type": "object",
+                    "entity": "user.address",
+                    "nullable": true
+                }
+            ]
+        },
+        "address": {
+            "properties": [
+                {
+                    "id": "city",
+                    "type": "string",
+                    "nullable": true
+                },
+                {
+                    "id": "zip",
+                    "type": "string",
+                    "nullable": true
+                }
+            ]
+        }
+    }
 }

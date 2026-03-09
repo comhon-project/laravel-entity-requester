@@ -302,6 +302,7 @@ class MakeModelSchema extends Command
             'real' => 'float',
             'int' => 'integer',
             'integer' => 'integer',
+            'object' => 'object',
             'timestamp' => 'timestamp',
             'string' => 'string',
             AsStringable::class => 'string',

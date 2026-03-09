@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Cache;
 
 abstract class AbstractJsonFileFactory implements CacheableInterface, ResponsableInterface
 {
-    private array $collection = [];
+    protected array $collection = [];
 
     private Repository $cache;
 
@@ -30,14 +30,7 @@ abstract class AbstractJsonFileFactory implements CacheableInterface, Responsabl
         $id = $this->resolveId($id);
 
         if (! isset($this->collection[$id])) {
-            $loader = function () use ($id) {
-                $data = json_decode($this->getJson($id), true);
-
-                return $this->instanciate($data);
-            };
-            $this->collection[$id] = EntityRequester::useCache()
-                ? $this->getCache()->rememberForever("entity-requester::{$this->getName()}-object::{$id}", $loader)
-                : $loader();
+            $this->register($id);
         }
 
         return $this->collection[$id];
@@ -77,8 +70,10 @@ abstract class AbstractJsonFileFactory implements CacheableInterface, Responsabl
             $id = $this->resolveId($id);
             $this->getCache()->forget("entity-requester::{$this->getName()}-object::{$id}");
             $this->getCache()->forget("entity-requester::{$this->getName()}-json::{$id}");
+            unset($this->collection[$id]);
         } elseif ($this->getCache() instanceof TaggedCache) {
             $this->getCache()->flush();
+            $this->collection = [];
         } else {
             throw new \Exception('cannot flush cache, cache driver must manage tags');
         }
@@ -101,6 +96,18 @@ abstract class AbstractJsonFileFactory implements CacheableInterface, Responsabl
     public function getPath(string $id): string
     {
         return $this->getDirectory().DIRECTORY_SEPARATOR.$id.'.json';
+    }
+
+    protected function register(string $id): void
+    {
+        $loader = function () use ($id) {
+            $data = json_decode($this->getJson($id), true);
+
+            return $this->instanciate($data);
+        };
+        $this->collection[$id] = EntityRequester::useCache()
+            ? $this->getCache()->rememberForever("entity-requester::{$this->getName()}-object::{$id}", $loader)
+            : $loader();
     }
 
     private function resolveId(string $id): string

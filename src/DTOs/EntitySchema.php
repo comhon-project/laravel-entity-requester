@@ -6,6 +6,9 @@ class EntitySchema
 {
     private array $data;
 
+    /** @var array<string, EntitySchema> */
+    private array $entities = [];
+
     public function __construct(array $data)
     {
         $indexArray = function (array $array) {
@@ -20,6 +23,11 @@ class EntitySchema
 
         $data['properties'] = $indexArray($data['properties'] ?? []);
         $data['scopes'] = $indexArray($data['scopes'] ?? []);
+
+        foreach ($data['entities'] ?? [] as $name => $entityData) {
+            $this->entities[$name] = new EntitySchema($entityData);
+        }
+        unset($data['entities']);
 
         $this->data = $data;
     }
@@ -57,6 +65,14 @@ class EntitySchema
     public function hasScope(string $scopeId): bool
     {
         return isset($this->data['scopes'][$scopeId]);
+    }
+
+    /**
+     * @return array<string, EntitySchema>
+     */
+    public function getEntities(): array
+    {
+        return $this->entities;
     }
 
     public function getDefaultSort(): ?array

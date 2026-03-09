@@ -66,7 +66,7 @@ class Gate implements RequestGateInterface
 
     private function authorizeCondition(Model $model, Condition $condition)
     {
-        $propertyId = $condition->getProperty();
+        $propertyId = explode('.', $condition->getProperty())[0];
         $requestSchema = $this->requestSchemaFactory->get(get_class($model));
 
         if (! $requestSchema->isFiltrable($propertyId)) {

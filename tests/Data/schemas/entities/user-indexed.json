@@ -77,6 +77,12 @@
             },
             "nullable": true
         },
+        "metadata": {
+            "id": "metadata",
+            "type": "object",
+            "entity": "user.metadata",
+            "nullable": true
+        },
         "has_consumer_ability": {
             "id": "has_consumer_ability",
             "type": "boolean",

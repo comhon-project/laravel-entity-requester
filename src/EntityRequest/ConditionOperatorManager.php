@@ -8,6 +8,7 @@ use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 class ConditionOperatorManager implements ConditionOperatorManagerInterface
 {
     private const OPERATORS_BY_PROPERTY_TYPE = [
+        'object' => [ConditionOperator::HasKey, ConditionOperator::HasNotKey],
         'array' => [ConditionOperator::Contains, ConditionOperator::NotContains],
         'default' => [
             ConditionOperator::Equal, ConditionOperator::NotEqual,
@@ -24,6 +25,7 @@ class ConditionOperatorManager implements ConditionOperatorManagerInterface
         return match ($operator) {
             ConditionOperator::In, ConditionOperator::NotIn => throw new \LogicException("Operator {$operator->value} must use whereIn/whereNotIn methods"),
             ConditionOperator::Contains, ConditionOperator::NotContains => throw new \LogicException("Operator {$operator->value} must use whereJsonContains/whereJsonDoesntContain methods"),
+            ConditionOperator::HasKey, ConditionOperator::HasNotKey => throw new \LogicException("Operator {$operator->value} must use whereJsonContainsKey/whereJsonDoesntContainKey methods"),
             ConditionOperator::NotLike => 'not like',
             ConditionOperator::NotIlike => 'not ilike',
             default => $operator->value,

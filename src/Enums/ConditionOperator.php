@@ -18,4 +18,6 @@ enum ConditionOperator: string
     case NotIlike = 'not_ilike';
     case Contains = 'contains';
     case NotContains = 'not_contains';
+    case HasKey = 'has_key';
+    case HasNotKey = 'has_not_key';
 }

@@ -172,9 +172,9 @@ class EntityRequestTest extends TestCase
     #[DataProvider('provider_build_entity_request_invalid')]
     public function test_instanciate_entity_request_invalid($data, $error)
     {
-        $isConditionOperatorError = $error == "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains]";
+        $isConditionOperatorError = $error == "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains, has_key, has_not_key]";
         if ($isConditionOperatorError && config('database.default') == 'pgsql') {
-            $error = str_replace(', contains, not_contains]', ', ilike, not_ilike, contains, not_contains]', $error);
+            $error = str_replace(', contains,', ', ilike, not_ilike, contains,', $error);
         }
 
         $this->expectExceptionMessage($error);
@@ -242,11 +242,11 @@ class EntityRequestTest extends TestCase
             ],
             [
                 ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'foo']],
-                "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains]",
+                "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains, has_key, has_not_key]",
             ],
             [
                 ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => ['foo']]],
-                "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains]",
+                "Invalid property 'filter.operator', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains, has_key, has_not_key]",
             ],
             [
                 ['filter' => ['type' => 'condition', 'property' => 'foo', 'operator' => 'in', 'value' => 123]],

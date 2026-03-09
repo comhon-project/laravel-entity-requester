@@ -52,6 +52,7 @@ class User extends Authenticatable
         'first_name' => AsStringable::class,
         'status' => Status::class,
         'favorite_fruits' => AsEnumCollection::class.':'.Fruit::class,
+        'metadata' => 'object',
     ];
 
     public array $primaryIdentifiers = [

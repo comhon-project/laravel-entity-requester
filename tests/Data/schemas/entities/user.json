@@ -78,6 +78,11 @@
             "nullable": true
         },
         {
+            "id": "metadata",
+            "type": "object",
+            "nullable": true
+        },
+        {
             "id": "has_consumer_ability",
             "type": "boolean",
             "nullable": false
