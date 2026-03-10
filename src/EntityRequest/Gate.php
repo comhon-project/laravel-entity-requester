@@ -11,6 +11,7 @@ use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
+use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Comhon\EntityRequester\Interfaces\RequestGateInterface;
 use Comhon\EntityRequester\Interfaces\RequestSchemaFactoryInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +20,10 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 
 class Gate implements RequestGateInterface
 {
-    public function __construct(private RequestSchemaFactoryInterface $requestSchemaFactory) {}
+    public function __construct(
+        private RequestSchemaFactoryInterface $requestSchemaFactory,
+        private EntitySchemaFactoryInterface $entitySchemaFactory,
+    ) {}
 
     /**
      * verify if entity request is authorized
@@ -42,13 +46,22 @@ class Gate implements RequestGateInterface
         }
         $class = $entityRequest->getModelClass();
         $model = new $class;
+        $requestSchema = $this->requestSchemaFactory->get($class);
         foreach ($entityRequest->getSort() as $sortElement) {
-            if (strpos($sortElement['property'], '.')) {
-                $this->authorizeRelationshipSort($model, $sortElement);
-            } else {
-                $requestSchema = $this->requestSchemaFactory->get($class);
-                if (! $requestSchema->isSortable($sortElement['property'])) {
-                    throw new NotSortableException($sortElement['property']);
+            $property = $sortElement['property'];
+
+            $rootPropertyId = explode('.', $property)[0];
+
+            if (! $requestSchema->isSortable($rootPropertyId)) {
+                throw new NotSortableException($rootPropertyId);
+            }
+
+            if (str_contains($property, '.')) {
+                $entitySchema = $this->entitySchemaFactory->get($class);
+                $rootProperty = $entitySchema->getProperty($rootPropertyId);
+
+                if ($rootProperty['type'] !== 'object') {
+                    $this->authorizeRelationshipSort($model, $sortElement);
                 }
             }
         }
@@ -123,13 +136,19 @@ class Gate implements RequestGateInterface
         $filter = $relationshipSort['filter'] ?? null;
 
         for ($i = 0; $i < count($explodedProperty) - 1; $i++) {
-            $relationName = $explodedProperty[$i];
+            $segmentName = $explodedProperty[$i];
 
             $parentRequestSchema = $this->requestSchemaFactory->get(get_class($parentModel));
-            if (! $parentRequestSchema->isSortable($relationName)) {
-                throw new NotSortableException($relationName);
+            if (! $parentRequestSchema->isSortable($segmentName)) {
+                throw new NotSortableException($segmentName);
             }
-            $relation = $parentModel->$relationName();
+
+            $entitySchema = $this->entitySchemaFactory->get(get_class($parentModel));
+            if ($entitySchema->getProperty($segmentName)['type'] === 'object') {
+                return;
+            }
+
+            $relation = $parentModel->$segmentName();
             $parentModel = $relation->getRelated();
         }
 

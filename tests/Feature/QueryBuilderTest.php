@@ -11,6 +11,7 @@ use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidOperatorForPropertyTypeException;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
+use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
 use Comhon\EntityRequester\Facades\QueryBuilder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -1053,6 +1054,114 @@ class QueryBuilderTest extends TestCase
         $this->assertStringContainsString('address', $rawSql);
         $this->assertStringContainsString('label', $rawSql);
         $query->get();
+    }
+
+    public function test_build_entity_sort_property_not_found_in_schema()
+    {
+        $this->expectException(\Comhon\EntityRequester\Exceptions\PropertyNotFoundException::class);
+        $this->expectExceptionMessage("Property 'unknown' not found in schema 'user'");
+
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'unknown.foo',
+                ],
+            ],
+        ]);
+    }
+
+    public function test_build_entity_sort_property_not_found_in_intermediate_schema()
+    {
+        $this->expectException(\Comhon\EntityRequester\Exceptions\PropertyNotFoundException::class);
+        $this->expectExceptionMessage("Property 'unknown' not found in schema 'post'");
+
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'posts.unknown.foo',
+                ],
+            ],
+        ]);
+    }
+
+    public function test_build_entity_sort_object_json_column()
+    {
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'sort' => [
+                ['property' => 'metadata.address.city'],
+            ],
+        ]);
+
+        $connectionName = config('database.default');
+        $driver = config("database.connections.{$connectionName}.driver");
+
+        if ($driver === 'sqlite') {
+            $rawSql = 'select * from "users" order by json_extract("metadata", \'$."address"."city"\') asc';
+        } elseif ($driver === 'pgsql') {
+            $rawSql = 'select * from "users" order by "metadata"->\'address\'->>\'city\' asc';
+        } else {
+            $rawSql = 'select * from `users` order by json_unquote(json_extract(`metadata`, \'$."address"."city"\')) asc';
+        }
+        $this->assertEquals($rawSql, $query->toRawSql());
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
+    }
+
+    public function test_build_entity_sort_mixed_relation_and_object()
+    {
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'posts.owner.metadata.address.city',
+                    'aggregation' => 'min',
+                ],
+            ],
+        ]);
+
+        $connectionName = config('database.default');
+        $driver = config("database.connections.{$connectionName}.driver");
+
+        if ($driver === 'sqlite') {
+            $rawSql = 'select "users".* from "users" '.
+                'left join "posts" as "alias_posts_1" on "users"."id" = "alias_posts_1"."owner_id" '.
+                'inner join "users" as "alias_users_2" on "alias_posts_1"."owner_id" = "alias_users_2"."id" '.
+                'group by "users"."id" '.
+                'order by min(json_extract("alias_users_2"."metadata", \'$."address"."city"\')) asc';
+        } elseif ($driver === 'pgsql') {
+            $rawSql = 'select "users".* from "users" '.
+                'left join "posts" as "alias_posts_1" on "users"."id" = "alias_posts_1"."owner_id" '.
+                'inner join "users" as "alias_users_2" on "alias_posts_1"."owner_id" = "alias_users_2"."id" '.
+                'group by "users"."id" '.
+                'order by min("alias_users_2"."metadata"->\'address\'->>\'city\') asc';
+        } else {
+            $rawSql = 'select `users`.* from `users` '.
+                'left join `posts` as `alias_posts_1` on `users`.`id` = `alias_posts_1`.`owner_id` '.
+                'inner join `users` as `alias_users_2` on `alias_posts_1`.`owner_id` = `alias_users_2`.`id` '.
+                'group by `users`.`id` '.
+                'order by min(json_unquote(json_extract(`alias_users_2`.`metadata`, \'$."address"."city"\'))) asc';
+        }
+        $this->assertEquals($rawSql, $query->toRawSql());
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
+    }
+
+    public function test_build_entity_sort_mixed_relation_and_object_missing_aggregation()
+    {
+        $this->expectException(InvalidToManySortException::class);
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'posts.owner.metadata.address.city',
+                ],
+            ],
+        ]);
     }
 
     public function test_build_entity_sort_nested_relations_with_subquery()

@@ -18,6 +18,7 @@ use Comhon\EntityRequester\Exceptions\InvalidOperatorForPropertyTypeException;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
+use Comhon\EntityRequester\Exceptions\PropertyNotFoundException;
 use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -76,10 +77,24 @@ class QueryBuilder
         $schema = $this->entitySchemaFactory->get($class);
         if (! empty($sort)) {
             foreach ($sort as $sortElement) {
-                if (strpos($sortElement['property'], '.')) {
-                    $this->addRelationshipSort($query, $sortElement);
+                $property = $sortElement['property'];
+
+                if (str_contains($property, '.')) {
+                    $segments = explode('.', $property);
+                    $rootPropertyId = $segments[0];
+                    $rootProperty = $schema->getProperty($rootPropertyId);
+
+                    if (! $rootProperty) {
+                        throw new PropertyNotFoundException($rootPropertyId, $schema->getId());
+                    }
+
+                    if ($rootProperty['type'] === 'object') {
+                        $query->orderBy(implode('->', $segments), $sortElement['order']->value);
+                    } else {
+                        $this->addRelationshipSort($query, $sortElement);
+                    }
                 } else {
-                    $query->orderBy($sortElement['property'], $sortElement['order']->value);
+                    $query->orderBy($property, $sortElement['order']->value);
                 }
             }
         } elseif ($defaultSort = $schema->getDefaultSort()) {
@@ -305,22 +320,41 @@ class QueryBuilder
         $joinType = 'left';
         $aliasLeft = null;
         $relation = null;
+        $isToOne = true;
         $filter = $relationshipSort['filter'] ?? null;
 
         for ($i = 0; $i < count($explodedProperty) - 1; $i++) {
-            $relationName = $explodedProperty[$i];
+            $segmentName = $explodedProperty[$i];
+            $schema = $this->entitySchemaFactory->get(get_class($parentModel));
+            $segmentProperty = $schema->getProperty($segmentName);
+
+            if (! $segmentProperty) {
+                throw new PropertyNotFoundException($segmentName, $schema->getId());
+            }
+
+            if ($segmentProperty['type'] === 'object') {
+                break;
+            }
+
             $isLastModel = $i == count($explodedProperty) - 2;
             $currentFilter = $isLastModel ? $filter : null;
 
-            $relation = $parentModel->query()->getRelation($relationName);
+            $relation = $parentModel->query()->getRelation($segmentName);
             if ($relation instanceof MorphTo) {
                 throw new \Exception('MorphTo relations not managed for sorting');
             }
 
-            // We don’t have control over scopes and relations with conditions,
+            if ($isToOne && ! ($relation instanceof HasOne
+                || $relation instanceof BelongsTo
+                || $relation instanceof HasOneThrough
+                || $relation instanceof MorphOne)) {
+                $isToOne = false;
+            }
+
+            // We don't have control over scopes and relations with conditions,
             // especially when it comes to table aliases and qualified columns.
             // To avoid SQL errors, we use subqueries to isolate conditions
-            // that won’t be affected by the rest of the query.
+            // that won't be affected by the rest of the query.
             $needSubquery = ($currentFilter && $this->hasFilterClass($currentFilter, Scope::class))
                 || count($relation->getQuery()->getQuery()->wheres) > 0;
 
@@ -333,17 +367,13 @@ class QueryBuilder
             $aliasLeft = $aliasRight;
         }
 
-        $sortProperty = $explodedProperty[array_key_last($explodedProperty)];
+        $sortProperty = implode('->', array_slice($explodedProperty, $i));
 
         $requestedModel = $query->getModel();
         $query->select($requestedModel->getTable().'.*');
 
         $qualifedProperty = "{$aliasRight}.{$sortProperty}";
         $order = $relationshipSort['order']->value;
-        $isToOne = $relation instanceof HasOne
-            || $relation instanceof BelongsTo
-            || $relation instanceof HasOneThrough
-            || $relation instanceof MorphOne;
 
         if ($isToOne) {
             $query->orderBy($qualifedProperty, $order);

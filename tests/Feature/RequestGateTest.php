@@ -93,6 +93,21 @@ class RequestGateTest extends TestCase
         ]));
     }
 
+    public function test_authorize_relationship_sort_not_sortable_intermediate()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'id' is not sortable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'posts.id.something',
+                    'aggregation' => 'min',
+                ],
+            ],
+        ]));
+    }
+
     public function test_authorize_valid()
     {
         Gate::authorize(new EntityRequest([
@@ -192,5 +207,45 @@ class RequestGateTest extends TestCase
                 'value' => 'test',
             ],
         ]));
+    }
+
+    public function test_authorize_object_sort_dot_notation()
+    {
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                ['property' => 'metadata.address.city'],
+            ],
+        ]));
+
+        $this->assertTrue(true);
+    }
+
+    public function test_authorize_object_sort_not_sortable_root()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'password' is not sortable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                ['property' => 'password.something'],
+            ],
+        ]));
+    }
+
+    public function test_authorize_mixed_relation_object_sort()
+    {
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'posts.owner.metadata.address.city',
+                    'order' => 'asc',
+                    'aggregation' => 'min',
+                ],
+            ],
+        ]));
+
+        $this->assertTrue(true);
     }
 }
