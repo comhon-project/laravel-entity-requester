@@ -225,6 +225,17 @@
                     "type": "object",
                     "entity": "user.address",
                     "nullable": true
+                },
+                {
+                    "id": "secret",
+                    "type": "string",
+                    "nullable": true
+                },
+                {
+                    "id": "extra",
+                    "type": "object",
+                    "entity": "user.extra",
+                    "nullable": true
                 }
             ]
         },

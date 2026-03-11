@@ -6,6 +6,9 @@ class RequestSchema
 {
     private array $data;
 
+    /** @var array<string, RequestSchema> */
+    private array $entities = [];
+
     public function __construct(array $data)
     {
         $indexArray = function (array $array) {
@@ -21,6 +24,11 @@ class RequestSchema
         $data['filtrable']['properties'] = $indexArray($data['filtrable']['properties'] ?? []);
         $data['filtrable']['scopes'] = $indexArray($data['filtrable']['scopes'] ?? []);
         $data['sortable'] = $indexArray($data['sortable'] ?? []);
+
+        foreach ($data['entities'] ?? [] as $name => $entityData) {
+            $this->entities[$name] = new RequestSchema($entityData);
+        }
+        unset($data['entities']);
 
         $this->data = $data;
     }
@@ -48,5 +56,13 @@ class RequestSchema
     public function isSortable(string $propertyId): bool
     {
         return isset($this->data['sortable'][$propertyId]);
+    }
+
+    /**
+     * @return array<string, RequestSchema>
+     */
+    public function getEntities(): array
+    {
+        return $this->entities;
     }
 }

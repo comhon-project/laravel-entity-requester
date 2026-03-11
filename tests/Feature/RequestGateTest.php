@@ -248,4 +248,155 @@ class RequestGateTest extends TestCase
 
         $this->assertTrue(true);
     }
+
+    public function test_authorize_dot_notation_not_filtrable_nonexistent_inline_entity_property()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'foo' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => '=',
+                'property' => 'metadata.foo',
+                'value' => 'bar',
+            ],
+        ]));
+    }
+
+    public function test_authorize_dot_notation_not_filtrable_existing_inline_entity_property()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'secret' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => '=',
+                'property' => 'metadata.secret',
+                'value' => 'bar',
+            ],
+        ]));
+    }
+
+    public function test_authorize_dot_notation_not_filtrable_nested_inline_entity_property()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'foo' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => '=',
+                'property' => 'metadata.address.foo',
+                'value' => 'bar',
+            ],
+        ]));
+    }
+
+    public function test_authorize_object_sort_not_sortable_nonexistent_inline_entity_property()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'foo' is not sortable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                ['property' => 'metadata.foo'],
+            ],
+        ]));
+    }
+
+    public function test_authorize_object_sort_not_sortable_existing_inline_entity_property()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'secret' is not sortable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                ['property' => 'metadata.secret'],
+            ],
+        ]));
+    }
+
+    public function test_authorize_object_sort_not_sortable_nested_inline_entity_property()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'foo' is not sortable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                ['property' => 'metadata.address.foo'],
+            ],
+        ]));
+    }
+
+    public function test_authorize_dot_notation_not_filtrable_through_non_object_property()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'something' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => '=',
+                'property' => 'metadata.label.something',
+                'value' => 'bar',
+            ],
+        ]));
+    }
+
+    public function test_authorize_dot_notation_not_filtrable_missing_inline_request_schema()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'something' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => '=',
+                'property' => 'metadata.extra.something',
+                'value' => 'bar',
+            ],
+        ]));
+    }
+
+    public function test_authorize_object_sort_not_sortable_through_non_object_property()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'something' is not sortable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                ['property' => 'metadata.label.something'],
+            ],
+        ]));
+    }
+
+    public function test_authorize_object_sort_not_sortable_missing_inline_request_schema()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'something' is not sortable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                ['property' => 'metadata.extra.something'],
+            ],
+        ]));
+    }
+
+    public function test_authorize_mixed_relation_object_sort_not_sortable_inline()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'foo' is not sortable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'posts.owner.metadata.foo',
+                    'order' => 'asc',
+                    'aggregation' => 'min',
+                ],
+            ],
+        ]));
+    }
 }

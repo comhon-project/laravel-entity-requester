@@ -23,6 +23,26 @@ class RequestSchemaFactory extends AbstractJsonFileFactory implements RequestSch
         return new RequestSchema($data);
     }
 
+    protected function register(string $id): void
+    {
+        parent::register($id);
+
+        foreach ($this->collection[$id]->getEntities() as $name => $localSchema) {
+            $this->collection[$id.'.'.$name] = $localSchema;
+        }
+    }
+
+    public function refresh(?string $id = null): void
+    {
+        if ($id !== null) {
+            foreach ($this->get($id)->getEntities() as $name => $localSchema) {
+                parent::refresh($id.'.'.$name);
+            }
+        }
+
+        parent::refresh($id);
+    }
+
     protected function getDirectory(): string
     {
         return EntityRequester::getRequestSchemaDirectory();

@@ -53,5 +53,19 @@
         "friends",
         "purchases",
         "childrenPosts"
-    ]
+    ],
+    "entities": {
+        "metadata": {
+            "filtrable": {
+                "properties": ["label", "address", "extra"]
+            },
+            "sortable": ["label", "address", "extra"]
+        },
+        "address": {
+            "filtrable": {
+                "properties": ["city", "zip"]
+            },
+            "sortable": ["city", "zip"]
+        }
+    }
 }
