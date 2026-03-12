@@ -2,17 +2,17 @@
 
 namespace Comhon\EntityRequester\DTOs;
 
+use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Enums\MathOperator;
-use Comhon\EntityRequester\Enums\RelationshipConditionOperator;
 
-class RelationshipCondition extends AbstractCondition
+class EntityCondition extends AbstractCondition
 {
     public function __construct(
         private string $property,
-        private RelationshipConditionOperator $operator,
+        private EntityConditionOperator $operator,
         private ?AbstractCondition $filter = null,
-        private MathOperator $countOperator = MathOperator::GreaterThanOrEqual,
-        private int $count = 1,
+        private ?MathOperator $countOperator = null,
+        private ?int $count = null,
     ) {}
 
     public function getProperty(): string
@@ -20,7 +20,7 @@ class RelationshipCondition extends AbstractCondition
         return $this->property;
     }
 
-    public function getOperator(): RelationshipConditionOperator
+    public function getOperator(): EntityConditionOperator
     {
         return $this->operator;
     }
@@ -30,12 +30,12 @@ class RelationshipCondition extends AbstractCondition
         return $this->filter;
     }
 
-    public function getCountOperator(): MathOperator
+    public function getCountOperator(): ?MathOperator
     {
         return $this->countOperator;
     }
 
-    public function getCount(): int
+    public function getCount(): ?int
     {
         return $this->count;
     }

@@ -4,14 +4,14 @@ namespace Tests\Feature\Feature;
 
 use App\Models\User;
 use Comhon\EntityRequester\DTOs\Condition;
+use Comhon\EntityRequester\DTOs\EntityCondition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\DTOs\Group;
-use Comhon\EntityRequester\DTOs\RelationshipCondition;
 use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Enums\ConditionOperator;
+use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Enums\OrderDirection;
-use Comhon\EntityRequester\Enums\RelationshipConditionOperator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -97,12 +97,12 @@ class EntityRequestTest extends TestCase
                         'filters' => [],
                     ],
                     [
-                        'type' => 'relationship_condition',
+                        'type' => 'entity_condition',
                         'operator' => 'Has',
                         'property' => 'foo',
                     ],
                     [
-                        'type' => 'relationship_condition',
+                        'type' => 'entity_condition',
                         'operator' => 'Has',
                         'property' => 'foo',
                         'filter' => [
@@ -150,10 +150,10 @@ class EntityRequestTest extends TestCase
         $this->assertEquals('my_scope', $scope->getName());
         $this->assertEquals(['foo'], $scope->getParameters());
 
-        /** @var RelationshipCondition $relationshipCondition */
+        /** @var EntityCondition $relationshipCondition */
         $relationshipCondition = $filter->getConditions()[5];
-        $this->assertInstanceOf(RelationshipCondition::class, $relationshipCondition);
-        $this->assertEquals(RelationshipConditionOperator::Has, $relationshipCondition->getOperator());
+        $this->assertInstanceOf(EntityCondition::class, $relationshipCondition);
+        $this->assertEquals(EntityConditionOperator::Has, $relationshipCondition->getOperator());
         $this->assertEquals('foo', $relationshipCondition->getProperty());
 
         /** @var Condition $condition */
@@ -197,7 +197,7 @@ class EntityRequestTest extends TestCase
             ],
             [
                 ['filter' => ['type' => 'foo']],
-                "Invalid property 'filter.type', must be one of [condition, group, relationship_condition, scope]",
+                "Invalid property 'filter.type', must be one of [condition, group, entity_condition, scope]",
             ],
             [
                 ['filter' => ['type' => 'group']],
@@ -293,43 +293,43 @@ class EntityRequestTest extends TestCase
                 "Invalid property 'filter.parameters', must be a array list",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition']],
+                ['filter' => ['type' => 'entity_condition']],
                 "Property 'filter.property' is required",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition', 'property' => 123]],
+                ['filter' => ['type' => 'entity_condition', 'property' => 123]],
                 "Invalid property 'filter.property', must be a string",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo']],
+                ['filter' => ['type' => 'entity_condition', 'property' => 'foo']],
                 "filter.operator' is required",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'foo']],
+                ['filter' => ['type' => 'entity_condition', 'property' => 'foo', 'operator' => 'foo']],
                 "Invalid property 'filter.operator', must be one of [has, has_not]",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => ['foo']]],
+                ['filter' => ['type' => 'entity_condition', 'property' => 'foo', 'operator' => ['foo']]],
                 "Invalid property 'filter.operator', must be one of [has, has_not]",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'has', 'filter' => 'foo']],
+                ['filter' => ['type' => 'entity_condition', 'property' => 'foo', 'operator' => 'has', 'filter' => 'foo']],
                 "Invalid property 'filter.filter', must be a array",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'has', 'count_operator' => 'foo']],
+                ['filter' => ['type' => 'entity_condition', 'property' => 'foo', 'operator' => 'has', 'count_operator' => 'foo']],
                 "filter.count_operator', must be one of [=, <>, <, <=, >, >=]",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'has', 'count_operator' => ['foo']]],
+                ['filter' => ['type' => 'entity_condition', 'property' => 'foo', 'operator' => 'has', 'count_operator' => ['foo']]],
                 "filter.count_operator', must be one of [=, <>, <, <=, >, >=]",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'has', 'count' => 'foo']],
+                ['filter' => ['type' => 'entity_condition', 'property' => 'foo', 'operator' => 'has', 'count' => 'foo']],
                 "Invalid property 'filter.count', must be a integer greater than 0",
             ],
             [
-                ['filter' => ['type' => 'relationship_condition', 'property' => 'foo', 'operator' => 'has', 'count' => 0]],
+                ['filter' => ['type' => 'entity_condition', 'property' => 'foo', 'operator' => 'has', 'count' => 0]],
                 "Invalid property 'filter.count', must be a integer greater than 0",
             ],
             [

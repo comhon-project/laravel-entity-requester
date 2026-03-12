@@ -24,8 +24,9 @@ class EntitySchema
         $data['properties'] = $indexArray($data['properties'] ?? []);
         $data['scopes'] = $indexArray($data['scopes'] ?? []);
 
-        foreach ($data['entities'] ?? [] as $name => $entityData) {
-            $this->entities[$name] = new EntitySchema($entityData);
+        foreach ($data['entities'] ?? [] as $localId => $entityData) {
+            $entityData['id'] = $data['id'].'.'.$localId;
+            $this->entities[$localId] = new EntitySchema($entityData);
         }
         unset($data['entities']);
 

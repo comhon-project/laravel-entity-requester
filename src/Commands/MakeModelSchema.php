@@ -108,7 +108,7 @@ class MakeModelSchema extends Command
 
         $sortable = $this->getRequestOption('sortable', $allowedPropOptions);
 
-        /** @var \Illuminate\Database\Eloquent\Model $model */
+        /** @var Model $model */
         $model = new $modelClass;
 
         $entitySchema = $this->initSchema($model, $fresh);
@@ -782,7 +782,7 @@ class MakeModelSchema extends Command
         return $value;
     }
 
-    private function isDeprecatedMethod(\ReflectionMethod $method): bool
+    private function isDeprecatedMethod(ReflectionMethod $method): bool
     {
         foreach ($method->getAttributes() as $attribute) {
             if ($attribute->getName() == 'Deprecated') {

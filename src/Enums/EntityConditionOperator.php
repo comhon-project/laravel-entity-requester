@@ -2,7 +2,7 @@
 
 namespace Comhon\EntityRequester\Enums;
 
-enum RelationshipConditionOperator: string
+enum EntityConditionOperator: string
 {
     case Has = 'has';
     case HasNot = 'has_not';

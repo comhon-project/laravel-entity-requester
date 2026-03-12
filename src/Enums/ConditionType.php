@@ -6,6 +6,6 @@ enum ConditionType: string
 {
     case Condition = 'condition';
     case Group = 'group';
-    case RelationshipCondition = 'relationship_condition';
+    case EntityCondition = 'entity_condition';
     case Scope = 'scope';
 }

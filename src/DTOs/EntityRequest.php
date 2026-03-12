@@ -5,10 +5,10 @@ namespace Comhon\EntityRequester\DTOs;
 use Comhon\EntityRequester\Enums\AggregationFunction;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\ConditionType;
+use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Enums\MathOperator;
 use Comhon\EntityRequester\Enums\OrderDirection;
-use Comhon\EntityRequester\Enums\RelationshipConditionOperator;
 use Comhon\EntityRequester\Exceptions\EnumValueException;
 use Comhon\EntityRequester\Exceptions\InvalidConditionOperatorException;
 use Comhon\EntityRequester\Exceptions\MalformedValueException;
@@ -22,7 +22,7 @@ class EntityRequest
     private string $modelClass;
 
     /**
-     * @var Condition|Group|RelationshipCondition|Scope
+     * @var Condition|Group|EntityCondition|Scope
      */
     private ?AbstractCondition $filter = null;
 
@@ -147,7 +147,7 @@ class EntityRequest
         return match ($filter['type']) {
             ConditionType::Condition->value => $this->importCondition($filter, $stack),
             ConditionType::Group->value => $this->importGroup($filter, $stack),
-            ConditionType::RelationshipCondition->value => $this->importRelationshipCondition($filter, $stack),
+            ConditionType::EntityCondition->value => $this->importEntityCondition($filter, $stack),
             ConditionType::Scope->value => $this->importScope($filter, $stack),
             default => throw new EnumValueException($this->getStack('type', $stack), ConditionType::class)
         };
@@ -224,7 +224,7 @@ class EntityRequest
         return $group;
     }
 
-    private function importRelationshipCondition(array $filter, array $stack): RelationshipCondition
+    private function importEntityCondition(array $filter, array $stack): EntityCondition
     {
         if (! isset($filter['property'])) {
             throw new MissingValueException($this->getStack('property', $stack));
@@ -236,13 +236,13 @@ class EntityRequest
             throw new MissingValueException($this->getStack('operator', $stack));
         }
         if (! is_string($filter['operator'])) {
-            throw new EnumValueException($this->getStack('operator', $stack), RelationshipConditionOperator::class);
+            throw new EnumValueException($this->getStack('operator', $stack), EntityConditionOperator::class);
         }
-        $operator = RelationshipConditionOperator::tryFrom(strtolower($filter['operator']));
+        $operator = EntityConditionOperator::tryFrom(strtolower($filter['operator']));
         if (! $operator) {
-            throw new EnumValueException($this->getStack('operator', $stack), RelationshipConditionOperator::class);
+            throw new EnumValueException($this->getStack('operator', $stack), EntityConditionOperator::class);
         }
-        $countOperator = MathOperator::GreaterThanOrEqual;
+        $countOperator = null;
         if (isset($filter['count_operator'])) {
             if (! is_string($filter['count_operator'])) {
                 throw new EnumValueException($this->getStack('count_operator', $stack), MathOperator::class);
@@ -252,7 +252,7 @@ class EntityRequest
                 throw new EnumValueException($this->getStack('count_operator', $stack), MathOperator::class);
             }
         }
-        $count = 1;
+        $count = null;
         if (isset($filter['count'])) {
             $count = $filter['count'];
             if (! is_int($count) || $count < 1) {
@@ -261,7 +261,7 @@ class EntityRequest
         }
         $stack[] = 'filter';
 
-        return new RelationshipCondition(
+        return new EntityCondition(
             $filter['property'],
             $operator,
             isset($filter['filter'])

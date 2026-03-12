@@ -10,6 +10,7 @@ use Comhon\ModelResolverContract\ModelResolverInterface;
 use Illuminate\Cache\Repository;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Cache\TaggedCache;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 
@@ -80,7 +81,7 @@ abstract class AbstractJsonFileFactory implements CacheableInterface, Responsabl
     }
 
     /**
-     * @return Repository|\Illuminate\Contracts\Cache\Store
+     * @return Repository|Store
      */
     public function getCache(): Repository
     {

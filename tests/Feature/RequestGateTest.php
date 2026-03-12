@@ -33,7 +33,7 @@ class RequestGateTest extends TestCase
         Gate::authorize(new EntityRequest([
             'entity' => 'user',
             'filter' => [
-                'type' => 'relationship_condition',
+                'type' => 'entity_condition',
                 'operator' => 'Has',
                 'property' => 'foo',
             ],
@@ -61,6 +61,20 @@ class RequestGateTest extends TestCase
             'filter' => [
                 'type' => 'scope',
                 'name' => 'foobar',
+            ],
+        ]));
+    }
+
+    public function test_authorize_sort_not_sortable_existing_property()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'password' is not sortable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'password.bar',
+                ],
             ],
         ]));
     }
@@ -132,11 +146,11 @@ class RequestGateTest extends TestCase
                         'operator' => 'or',
                         'filters' => [
                             [
-                                'type' => 'relationship_condition',
+                                'type' => 'entity_condition',
                                 'operator' => 'Has',
                                 'property' => 'purchases',
                                 'filter' => [
-                                    'type' => 'relationship_condition',
+                                    'type' => 'entity_condition',
                                     'operator' => 'Has',
                                     'property' => 'buyer',
                                     'filter' => [
@@ -179,32 +193,120 @@ class RequestGateTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_authorize_dot_notation_uses_root_property()
+    public function test_authorize_entity_condition_object_nested()
     {
         Gate::authorize(new EntityRequest([
             'entity' => 'user',
             'filter' => [
-                'type' => 'condition',
-                'operator' => '=',
-                'property' => 'metadata.address.city',
-                'value' => 'Paris',
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'entity_condition',
+                    'operator' => 'has',
+                    'property' => 'address',
+                    'filter' => [
+                        'type' => 'condition',
+                        'operator' => '=',
+                        'property' => 'city',
+                        'value' => 'Paris',
+                    ],
+                ],
             ],
         ]));
 
         $this->assertTrue(true);
     }
 
-    public function test_authorize_dot_notation_not_filtrable_root()
+    public function test_authorize_entity_condition_object_has_without_filter()
     {
-        $this->expectException(NotFiltrableException::class);
-        $this->expectExceptionMessage("Property 'password' is not filtrable");
         Gate::authorize(new EntityRequest([
             'entity' => 'user',
             'filter' => [
-                'type' => 'condition',
-                'operator' => '=',
-                'property' => 'password.something',
-                'value' => 'test',
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+            ],
+        ]));
+
+        $this->assertTrue(true);
+    }
+
+    public function test_authorize_entity_condition_object_has_not_without_filter()
+    {
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has_not',
+                'property' => 'metadata',
+            ],
+        ]));
+
+        $this->assertTrue(true);
+    }
+
+    public function test_authorize_entity_condition_object_not_filtrable_property()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'foo' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => '=',
+                    'property' => 'foo',
+                    'value' => 'bar',
+                ],
+            ],
+        ]));
+    }
+
+    public function test_authorize_entity_condition_object_not_filtrable_existing_property()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'secret' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => '=',
+                    'property' => 'secret',
+                    'value' => 'bar',
+                ],
+            ],
+        ]));
+    }
+
+    public function test_authorize_entity_condition_object_not_filtrable_nested()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'foo' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'entity_condition',
+                    'operator' => 'has',
+                    'property' => 'address',
+                    'filter' => [
+                        'type' => 'condition',
+                        'operator' => '=',
+                        'property' => 'foo',
+                        'value' => 'bar',
+                    ],
+                ],
             ],
         ]));
     }
@@ -249,51 +351,6 @@ class RequestGateTest extends TestCase
         $this->assertTrue(true);
     }
 
-    public function test_authorize_dot_notation_not_filtrable_nonexistent_inline_entity_property()
-    {
-        $this->expectException(NotFiltrableException::class);
-        $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        Gate::authorize(new EntityRequest([
-            'entity' => 'user',
-            'filter' => [
-                'type' => 'condition',
-                'operator' => '=',
-                'property' => 'metadata.foo',
-                'value' => 'bar',
-            ],
-        ]));
-    }
-
-    public function test_authorize_dot_notation_not_filtrable_existing_inline_entity_property()
-    {
-        $this->expectException(NotFiltrableException::class);
-        $this->expectExceptionMessage("Property 'secret' is not filtrable");
-        Gate::authorize(new EntityRequest([
-            'entity' => 'user',
-            'filter' => [
-                'type' => 'condition',
-                'operator' => '=',
-                'property' => 'metadata.secret',
-                'value' => 'bar',
-            ],
-        ]));
-    }
-
-    public function test_authorize_dot_notation_not_filtrable_nested_inline_entity_property()
-    {
-        $this->expectException(NotFiltrableException::class);
-        $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        Gate::authorize(new EntityRequest([
-            'entity' => 'user',
-            'filter' => [
-                'type' => 'condition',
-                'operator' => '=',
-                'property' => 'metadata.address.foo',
-                'value' => 'bar',
-            ],
-        ]));
-    }
-
     public function test_authorize_object_sort_not_sortable_nonexistent_inline_entity_property()
     {
         $this->expectException(NotSortableException::class);
@@ -330,32 +387,56 @@ class RequestGateTest extends TestCase
         ]));
     }
 
-    public function test_authorize_dot_notation_not_filtrable_through_non_object_property()
+    public function test_authorize_entity_condition_not_filtrable_existing_property()
     {
         $this->expectException(NotFiltrableException::class);
-        $this->expectExceptionMessage("Property 'something' is not filtrable");
+        $this->expectExceptionMessage("Property 'password' is not filtrable");
         Gate::authorize(new EntityRequest([
             'entity' => 'user',
             'filter' => [
-                'type' => 'condition',
-                'operator' => '=',
-                'property' => 'metadata.label.something',
-                'value' => 'bar',
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'password',
             ],
         ]));
     }
 
-    public function test_authorize_dot_notation_not_filtrable_missing_inline_request_schema()
+    public function test_authorize_entity_condition_property_not_found_in_entity_schema()
     {
         $this->expectException(NotFiltrableException::class);
-        $this->expectExceptionMessage("Property 'something' is not filtrable");
+        $this->expectExceptionMessage("Property 'unknown' is not filtrable");
         Gate::authorize(new EntityRequest([
             'entity' => 'user',
             'filter' => [
-                'type' => 'condition',
-                'operator' => '=',
-                'property' => 'metadata.extra.something',
-                'value' => 'bar',
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'unknown',
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => '=',
+                    'property' => 'foo',
+                    'value' => 'bar',
+                ],
+            ],
+        ]));
+    }
+
+    public function test_authorize_entity_condition_not_filtrable_scalar_property_with_filter()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'email' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'email',
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => '=',
+                    'property' => 'foo',
+                    'value' => 'bar',
+                ],
             ],
         ]));
     }
@@ -368,18 +449,6 @@ class RequestGateTest extends TestCase
             'entity' => 'user',
             'sort' => [
                 ['property' => 'metadata.label.something'],
-            ],
-        ]));
-    }
-
-    public function test_authorize_object_sort_not_sortable_missing_inline_request_schema()
-    {
-        $this->expectException(NotSortableException::class);
-        $this->expectExceptionMessage("Property 'something' is not sortable");
-        Gate::authorize(new EntityRequest([
-            'entity' => 'user',
-            'sort' => [
-                ['property' => 'metadata.extra.something'],
             ],
         ]));
     }

@@ -5,6 +5,7 @@ namespace Tests;
 use App\Providers\WorkbenchServiceProvider;
 use Comhon\EntityRequester\EntityRequesterServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -30,7 +31,7 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app)
     {
         if (! Schema::hasTable('users')) {
-            foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__.'/../workbench/database/Migrations') as $migration) {
+            foreach (File::allFiles(__DIR__.'/../workbench/database/Migrations') as $migration) {
                 (include $migration->getRealPath())->up();
             }
         }

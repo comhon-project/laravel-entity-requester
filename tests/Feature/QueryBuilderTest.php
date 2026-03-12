@@ -9,11 +9,16 @@ use Comhon\EntityRequester\Database\AliasCounter;
 use Comhon\EntityRequester\DTOs\Condition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\Enums\ConditionOperator;
+use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
 use Comhon\EntityRequester\Exceptions\InvalidOperatorForPropertyTypeException;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
+use Comhon\EntityRequester\Exceptions\NotFiltrableException;
+use Comhon\EntityRequester\Exceptions\NotSortableException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
+use Comhon\EntityRequester\Exceptions\PropertyNotFoundException;
 use Comhon\EntityRequester\Facades\QueryBuilder;
+use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -91,7 +96,7 @@ class QueryBuilderTest extends TestCase
 
         $query = QueryBuilder::fromEntityRequest($entityRequest);
 
-        $sqlOperator = app(\Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface::class)->getSqlOperator($operator);
+        $sqlOperator = app(ConditionOperatorManagerInterface::class)->getSqlOperator($operator);
         $sql = 'select * from "users" where "users"."email"::text '.$sqlOperator.' ? order by "name" asc, "first_name" asc';
         $this->assertEquals($sql, $query->toSql());
     }
@@ -133,19 +138,19 @@ class QueryBuilderTest extends TestCase
                         'operator' => 'or',
                         'filters' => [
                             [
-                                'type' => 'relationship_condition',
+                                'type' => 'entity_condition',
                                 'operator' => 'Has',
                                 'property' => 'posts',
                             ],
                             [
-                                'type' => 'relationship_condition',
+                                'type' => 'entity_condition',
                                 'operator' => 'Has',
                                 'property' => 'posts',
                                 'count_operator' => '<',
                                 'count' => 5,
                             ],
                             [
-                                'type' => 'relationship_condition',
+                                'type' => 'entity_condition',
                                 'operator' => 'Has_Not',
                                 'property' => 'friends',
                                 'filter' => [
@@ -350,7 +355,7 @@ class QueryBuilderTest extends TestCase
         $query = QueryBuilder::fromInputs([
             'entity' => 'purchase',
             'filter' => [
-                'type' => 'relationship_condition',
+                'type' => 'entity_condition',
                 'operator' => 'Has',
                 'property' => 'buyer',
                 'filter' => [
@@ -385,7 +390,7 @@ class QueryBuilderTest extends TestCase
                     'property' => 'purchases.amount',
                     'aggregation' => 'count',
                     'filter' => [
-                        'type' => 'relationship_condition',
+                        'type' => 'entity_condition',
                         'operator' => 'has',
                         'property' => 'tags',
                         'filter' => [
@@ -952,11 +957,27 @@ class QueryBuilderTest extends TestCase
         QueryBuilder::fromEntityRequest($entityRequest);
     }
 
-    public function test_build_entity_request_dot_notation_filter()
+    public function test_build_entity_request_entity_condition_object_nested()
     {
-        $entityRequest = new EntityRequest(null, User::class);
-        $entityRequest->setFilter(new Condition('metadata.address.city', ConditionOperator::Equal, 'Paris'));
-        $query = QueryBuilder::fromEntityRequest($entityRequest);
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'entity_condition',
+                    'operator' => 'has',
+                    'property' => 'address',
+                    'filter' => [
+                        'type' => 'condition',
+                        'operator' => '=',
+                        'property' => 'city',
+                        'value' => 'Paris',
+                    ],
+                ],
+            ],
+        ]);
 
         $rawSql = $query->toRawSql();
         $this->assertStringContainsString('metadata', $rawSql);
@@ -967,26 +988,36 @@ class QueryBuilderTest extends TestCase
     }
 
     #[DataProvider('providerBoolean')]
-    public function test_build_entity_request_dot_notation_two_levels(bool $and)
+    public function test_build_entity_request_entity_condition_object_group(bool $and)
     {
         $operator = $and ? 'and' : 'or';
         $query = QueryBuilder::fromInputs([
             'entity' => 'user',
             'filter' => [
-                'type' => 'group',
-                'operator' => $operator,
-                'filters' => [
-                    [
-                        'type' => 'condition',
-                        'operator' => '=',
-                        'property' => 'metadata.address.city',
-                        'value' => 'Paris',
-                    ],
-                    [
-                        'type' => 'condition',
-                        'operator' => '<>',
-                        'property' => 'metadata.address.zip',
-                        'value' => '75000',
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'entity_condition',
+                    'operator' => 'has',
+                    'property' => 'address',
+                    'filter' => [
+                        'type' => 'group',
+                        'operator' => $operator,
+                        'filters' => [
+                            [
+                                'type' => 'condition',
+                                'operator' => '=',
+                                'property' => 'city',
+                                'value' => 'Paris',
+                            ],
+                            [
+                                'type' => 'condition',
+                                'operator' => '<>',
+                                'property' => 'zip',
+                                'value' => '75000',
+                            ],
+                        ],
                     ],
                 ],
             ],
@@ -1001,16 +1032,117 @@ class QueryBuilderTest extends TestCase
         $query->get();
     }
 
-    public function test_build_entity_request_dot_notation_one_level()
+    public function test_build_entity_request_entity_condition_object_one_level()
     {
-        $entityRequest = new EntityRequest(null, User::class);
-        $entityRequest->setFilter(new Condition('metadata.label', ConditionOperator::Like, '%test%'));
-        $query = QueryBuilder::fromEntityRequest($entityRequest);
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => 'like',
+                    'property' => 'label',
+                    'value' => '%test%',
+                ],
+            ],
+        ]);
 
         $rawSql = $query->toRawSql();
         $this->assertStringContainsString('metadata', $rawSql);
         $this->assertStringContainsString('label', $rawSql);
         $query->get();
+    }
+
+    public function test_build_entity_request_entity_condition_object_has_without_filter()
+    {
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+            ],
+        ]);
+
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "users" where "users"."metadata" is not null order by "name" asc, "first_name" asc'
+        );
+        $this->assertEquals($rawSql, $query->toRawSql());
+        $query->get();
+    }
+
+    public function test_build_entity_request_entity_condition_object_has_not_without_filter()
+    {
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has_not',
+                'property' => 'metadata',
+            ],
+        ]);
+
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "users" where "users"."metadata" is null order by "name" asc, "first_name" asc'
+        );
+        $this->assertEquals($rawSql, $query->toRawSql());
+        $query->get();
+    }
+
+    public function test_build_entity_request_entity_condition_object_has_not_with_filter()
+    {
+        $this->expectException(InvalidEntityConditionException::class);
+        $this->expectExceptionMessage("Operator 'has_not' with filter is not supported on object property 'metadata'");
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has_not',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => '=',
+                    'property' => 'label',
+                    'value' => 'foo',
+                ],
+            ],
+        ]);
+    }
+
+    public function test_build_entity_request_entity_condition_object_with_count()
+    {
+        $this->expectException(InvalidEntityConditionException::class);
+        $this->expectExceptionMessage("Options 'count_operator' and 'count' are not supported on object property 'metadata'");
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'count' => 2,
+                'count_operator' => '>=',
+            ],
+        ]);
+    }
+
+    public function test_build_entity_request_entity_condition_object_with_scope()
+    {
+        $this->expectException(InvalidEntityConditionException::class);
+        $this->expectExceptionMessage('Scopes are not supported inside object entity conditions');
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'scope',
+                    'name' => 'foo',
+                ],
+            ],
+        ]);
     }
 
     public function test_build_entity_request_object_type_invalid_operator()
@@ -1056,9 +1188,90 @@ class QueryBuilderTest extends TestCase
         $query->get();
     }
 
+    public function test_build_entity_condition_property_not_found_in_schema()
+    {
+        $this->expectException(PropertyNotFoundException::class);
+        $this->expectExceptionMessage("Property 'unknown' not found in schema");
+
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'condition',
+                'operator' => '=',
+                'property' => 'unknown',
+                'value' => 'bar',
+            ],
+        ]);
+    }
+
+    public function test_build_entity_entity_condition_property_not_found_in_schema()
+    {
+        $this->expectException(PropertyNotFoundException::class);
+        $this->expectExceptionMessage("Property 'unknown' not found in schema");
+
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'unknown',
+            ],
+        ]);
+    }
+
+    public function test_build_entity_entity_condition_scalar_property()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'email' is not filtrable");
+
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'email',
+            ],
+        ]);
+    }
+
+    public function test_build_entity_object_entity_condition_filter_property_not_found()
+    {
+        $this->expectException(PropertyNotFoundException::class);
+        $this->expectExceptionMessage("Property 'unknown' not found in schema");
+
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'metadata',
+                'filter' => [
+                    'type' => 'entity_condition',
+                    'operator' => 'has',
+                    'property' => 'unknown',
+                ],
+            ],
+        ]);
+    }
+
+    public function test_build_entity_sort_scalar_property_with_dot_notation()
+    {
+        $this->expectException(NotSortableException::class);
+        $this->expectExceptionMessage("Property 'email' is not sortable");
+
+        QueryBuilder::fromInputs([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'email.foo',
+                ],
+            ],
+        ]);
+    }
+
     public function test_build_entity_sort_property_not_found_in_schema()
     {
-        $this->expectException(\Comhon\EntityRequester\Exceptions\PropertyNotFoundException::class);
+        $this->expectException(PropertyNotFoundException::class);
         $this->expectExceptionMessage("Property 'unknown' not found in schema 'user'");
 
         QueryBuilder::fromInputs([
@@ -1073,7 +1286,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_sort_property_not_found_in_intermediate_schema()
     {
-        $this->expectException(\Comhon\EntityRequester\Exceptions\PropertyNotFoundException::class);
+        $this->expectException(PropertyNotFoundException::class);
         $this->expectExceptionMessage("Property 'unknown' not found in schema 'post'");
 
         QueryBuilder::fromInputs([

@@ -3,6 +3,7 @@
 namespace Comhon\EntityRequester\Facades;
 
 use Comhon\EntityRequester\DTOs\EntityRequest;
+use Comhon\EntityRequester\Interfaces\RequestGateInterface;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -14,6 +15,6 @@ class Gate extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \Comhon\EntityRequester\Interfaces\RequestGateInterface::class;
+        return RequestGateInterface::class;
     }
 }
