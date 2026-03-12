@@ -149,14 +149,10 @@ class Gate implements RequestGateInterface
 
             if ($i < count($segments) - 1) {
 
-                if ($property['type'] === 'object') {
-                    $nextSchemaId = $property['entity'];
-                } elseif ($property['type'] === 'relationship') {
-                    $nextSchemaId = $property['related'];
-                } else {
+                if ($property['type'] !== 'object' && $property['type'] !== 'relationship') {
                     throw new NotSortableException($segments[$i + 1]);
                 }
-                $currentEntitySchema = $this->entitySchemaFactory->get($nextSchemaId);
+                $currentEntitySchema = $this->entitySchemaFactory->get($property['entity']);
             }
         }
 

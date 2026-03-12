@@ -16,19 +16,19 @@
             "id": "owner",
             "type": "relationship",
             "relationship_type": "belongs_to",
-            "related": "user"
+            "entity": "user"
         },
         {
             "id": "tags",
             "type": "relationship",
             "relationship_type": "morph_to_many",
-            "related": "tag"
+            "entity": "tag"
         },
         {
             "id": "publicTags",
             "type": "relationship",
             "relationship_type": "morph_to_many",
-            "related": "tag"
+            "entity": "tag"
         }
     ],
     "unique_identifier": "id",

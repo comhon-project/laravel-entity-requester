@@ -31,7 +31,7 @@
             "id": "posts",
             "type": "relationship",
             "relationship_type": "has_many",
-            "related": "post"
+            "entity": "post"
         }
     ],
     "unique_identifier": "id",
