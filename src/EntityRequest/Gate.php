@@ -8,6 +8,7 @@ use Comhon\EntityRequester\DTOs\EntityCondition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\DTOs\EntitySchema;
 use Comhon\EntityRequester\DTOs\Group;
+use Comhon\EntityRequester\DTOs\MorphCondition;
 use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
@@ -59,16 +60,29 @@ class Gate implements RequestGateInterface
             Condition::class => $this->authorizeCondition($entitySchema, $filter),
             Group::class => $this->authorizeGroup($entitySchema, $filter),
             EntityCondition::class => $this->authorizeEntityCondition($entitySchema, $filter),
+            MorphCondition::class => $this->authorizeMorphCondition($entitySchema, $filter),
             Scope::class => $this->authorizeScope($entitySchema, $filter),
         };
     }
 
+    private function authorizeFiltrableProperty(EntitySchema $entitySchema, string $propertyId): array
+    {
+        $property = $entitySchema->getProperty($propertyId);
+        if (! $property) {
+            throw new NotFiltrableException($propertyId);
+        }
+
+        $requestSchema = $this->requestSchemaFactory->get($entitySchema->getId());
+        if (! $requestSchema->isFiltrable($propertyId)) {
+            throw new NotFiltrableException($propertyId);
+        }
+
+        return $property;
+    }
+
     private function authorizeCondition(EntitySchema $entitySchema, Condition $condition)
     {
-        $requestSchema = $this->requestSchemaFactory->get($entitySchema->getId());
-        if (! $requestSchema->isFiltrable($condition->getProperty())) {
-            throw new NotFiltrableException($condition->getProperty());
-        }
+        $this->authorizeFiltrableProperty($entitySchema, $condition->getProperty());
     }
 
     private function authorizeGroup(EntitySchema $entitySchema, Group $group)
@@ -81,25 +95,15 @@ class Gate implements RequestGateInterface
     private function authorizeEntityCondition(EntitySchema $entitySchema, EntityCondition $condition)
     {
         $propertyId = $condition->getProperty();
+        $property = $this->authorizeFiltrableProperty($entitySchema, $propertyId);
         $filter = $condition->getFilter();
-
-        $property = $entitySchema->getProperty($propertyId);
-        if (! $property) {
-            throw new NotFiltrableException($propertyId);
-        }
-
-        $requestSchema = $this->requestSchemaFactory->get($entitySchema->getId());
-        if (! $requestSchema->isFiltrable($propertyId)) {
-            throw new NotFiltrableException($propertyId);
-        }
 
         if (! $filter) {
             return;
         }
 
         if ($property['type'] === 'object') {
-            $entityId = $property['entity'];
-            $childEntitySchema = $this->entitySchemaFactory->get($entityId);
+            $childEntitySchema = $this->entitySchemaFactory->get($property['entity']);
             $this->authorizeFilter($childEntitySchema, $filter);
         } elseif ($property['type'] === 'relationship') {
             $class = $this->modelResolver->getClass($entitySchema->getId());
@@ -119,6 +123,24 @@ class Gate implements RequestGateInterface
             }
         } else {
             throw new NotFiltrableException($propertyId);
+        }
+    }
+
+    private function authorizeMorphCondition(EntitySchema $entitySchema, MorphCondition $condition)
+    {
+        $propertyId = $condition->getProperty();
+        $property = $this->authorizeFiltrableProperty($entitySchema, $propertyId);
+        $filter = $condition->getFilter();
+
+        $allowedEntities = $property['entities'] ?? [];
+        foreach ($condition->getEntities() as $entityClass) {
+            $entityId = $this->modelResolver->getUniqueName($entityClass) ?? $entityClass;
+            if (! in_array($entityId, $allowedEntities)) {
+                throw new NotFiltrableException($propertyId);
+            }
+            if ($filter) {
+                $this->authorizeFilter($this->entitySchemaFactory->get($entityClass), $filter);
+            }
         }
     }
 

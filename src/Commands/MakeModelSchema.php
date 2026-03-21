@@ -441,6 +441,7 @@ class MakeModelSchema extends Command
                         ];
                         if ($relation instanceof MorphTo) {
                             $property['morph_type'] = $relation->getMorphType();
+                            $property['entities'] = [];
                         } else {
                             $property['entity'] = $this->getModelUniqueName($relation->getRelated());
                         }

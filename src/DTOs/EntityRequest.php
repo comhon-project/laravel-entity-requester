@@ -260,16 +260,47 @@ class EntityRequest
             }
         }
         $stack[] = 'filter';
+        $importedFilter = isset($filter['filter'])
+            ? $this->importFilter($filter['filter'], $stack)
+            : null;
 
-        return new EntityCondition(
-            $filter['property'],
-            $operator,
-            isset($filter['filter'])
-                ? $this->importFilter($filter['filter'], $stack)
-                : null,
-            $countOperator,
-            $count,
-        );
+        return isset($filter['entities'])
+            ? new MorphCondition(
+                $filter['property'],
+                $operator,
+                $this->importEntities($filter['entities'], $stack),
+                $importedFilter,
+                $countOperator,
+                $count,
+            )
+            : new EntityCondition(
+                $filter['property'],
+                $operator,
+                $importedFilter,
+                $countOperator,
+                $count,
+            );
+    }
+
+    private function importEntities(mixed $entities, array $stack): array
+    {
+        if (! is_array($entities) || empty($entities)) {
+            throw new MalformedValueException($this->getStack('entities', $stack), 'non-empty array of strings');
+        }
+        $modelResolver = app(ModelResolverInterface::class);
+        $classes = [];
+        foreach ($entities as $entityName) {
+            if (! is_string($entityName)) {
+                throw new MalformedValueException($this->getStack('entities', $stack), 'non-empty array of strings');
+            }
+            $class = $modelResolver->getClass($entityName);
+            if (! $class) {
+                throw new MalformedValueException($this->getStack('entities', $stack), 'entity name');
+            }
+            $classes[] = $class;
+        }
+
+        return $classes;
     }
 
     private function importScope(array $filter, array $stack): Scope

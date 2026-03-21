@@ -305,7 +305,8 @@ class MakeModelSchemaComandTest extends TestCase
                         "type": "relationship",
                         "relationship_type": "morph_to",
                         "morph_type": "buyer_type",
-                        "foreign_key": "buyer_id"
+                        "foreign_key": "buyer_id",
+                        "entities": []
                     },
                     {
                         "id": "tags",

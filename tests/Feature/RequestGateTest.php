@@ -468,4 +468,53 @@ class RequestGateTest extends TestCase
             ],
         ]));
     }
+
+    public function test_authorize_morph_condition()
+    {
+        Gate::authorize(new EntityRequest([
+            'entity' => 'purchase',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'buyer',
+                'entities' => ['user'],
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => '=',
+                    'property' => 'email',
+                    'value' => 'john@example.com',
+                ],
+            ],
+        ]));
+        $this->assertTrue(true);
+    }
+
+    public function test_authorize_morph_condition_without_filter()
+    {
+        Gate::authorize(new EntityRequest([
+            'entity' => 'purchase',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'buyer',
+                'entities' => ['user'],
+            ],
+        ]));
+        $this->assertTrue(true);
+    }
+
+    public function test_authorize_morph_condition_invalid_entity()
+    {
+        $this->expectException(NotFiltrableException::class);
+        $this->expectExceptionMessage("Property 'buyer' is not filtrable");
+        Gate::authorize(new EntityRequest([
+            'entity' => 'purchase',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'buyer',
+                'entities' => ['post'],
+            ],
+        ]));
+    }
 }

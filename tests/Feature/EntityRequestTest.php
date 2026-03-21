@@ -7,6 +7,7 @@ use Comhon\EntityRequester\DTOs\Condition;
 use Comhon\EntityRequester\DTOs\EntityCondition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\DTOs\Group;
+use Comhon\EntityRequester\DTOs\MorphCondition;
 use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
@@ -514,5 +515,103 @@ class EntityRequestTest extends TestCase
             ['property' => 'foo', 'order' => OrderDirection::Asc, 'filter' => null, 'aggregation' => null],
             ['property' => 'bar', 'order' => OrderDirection::Desc, 'filter' => null, 'aggregation' => null],
         ], $entityRequest->getSort());
+    }
+
+    public function test_instanciate_morph_condition_with_entities()
+    {
+        $entityRequest = new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'foo',
+                'entities' => ['user'],
+            ],
+        ]);
+
+        $filter = $entityRequest->getFilter();
+        $this->assertInstanceOf(MorphCondition::class, $filter);
+        $this->assertEquals(EntityConditionOperator::Has, $filter->getOperator());
+        $this->assertEquals('foo', $filter->getProperty());
+        $this->assertEquals([User::class], $filter->getEntities());
+    }
+
+    public function test_instanciate_morph_condition_with_entities_and_filter()
+    {
+        $entityRequest = new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'foo',
+                'entities' => ['user'],
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => '=',
+                    'property' => 'email',
+                    'value' => 'john@example.com',
+                ],
+            ],
+        ]);
+
+        $filter = $entityRequest->getFilter();
+        $this->assertInstanceOf(MorphCondition::class, $filter);
+        $this->assertInstanceOf(Condition::class, $filter->getFilter());
+    }
+
+    public function test_instanciate_morph_condition_invalid_entities_empty()
+    {
+        $this->expectExceptionMessage('must be a non-empty array of strings');
+        new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'foo',
+                'entities' => [],
+            ],
+        ]);
+    }
+
+    public function test_instanciate_morph_condition_invalid_entities_not_array()
+    {
+        $this->expectExceptionMessage('must be a non-empty array of strings');
+        new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'foo',
+                'entities' => 'user',
+            ],
+        ]);
+    }
+
+    public function test_instanciate_morph_condition_invalid_entities_not_strings()
+    {
+        $this->expectExceptionMessage('must be a non-empty array of strings');
+        new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'foo',
+                'entities' => [123],
+            ],
+        ]);
+    }
+
+    public function test_instanciate_morph_condition_invalid_entity_name()
+    {
+        $this->expectExceptionMessage('must be a entity name');
+        new EntityRequest([
+            'entity' => 'user',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'foo',
+                'entities' => ['nonexistent'],
+            ],
+        ]);
     }
 }

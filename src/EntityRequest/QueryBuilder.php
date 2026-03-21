@@ -10,6 +10,7 @@ use Comhon\EntityRequester\DTOs\EntityCondition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\DTOs\EntitySchema;
 use Comhon\EntityRequester\DTOs\Group;
+use Comhon\EntityRequester\DTOs\MorphCondition;
 use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
@@ -125,7 +126,7 @@ class QueryBuilder
         match (get_class($filter)) {
             Condition::class => $this->addCondition($schema, $query, $filter, $and, $table, $jsonPathPrefix),
             Group::class => $this->addGroup($schema, $query, $filter, $and, $table, $jsonPathPrefix),
-            EntityCondition::class => $this->addEntityCondition($schema, $query, $filter, $and, $table, $jsonPathPrefix),
+            EntityCondition::class, MorphCondition::class => $this->addEntityCondition($schema, $query, $filter, $and, $table, $jsonPathPrefix),
             Scope::class => $jsonPathPrefix !== null
                 ? throw new InvalidEntityConditionException(
                     'Scopes are not supported inside object entity conditions'
@@ -250,7 +251,9 @@ class QueryBuilder
             throw new PropertyNotFoundException($propertyId, $schema->getId());
         }
 
-        if ($property['type'] === 'object') {
+        if ($condition instanceof MorphCondition) {
+            $this->addMorphEntityCondition($query, $condition, $and);
+        } elseif ($property['type'] === 'object') {
             $this->addObjectEntityCondition($schema, $query, $condition, $and, $table, $jsonPathPrefix);
         } elseif ($property['type'] === 'relationship') {
             $this->addRelationshipEntityCondition($schema, $query, $condition, $and, $table);
@@ -305,6 +308,33 @@ class QueryBuilder
         $childSchema = $this->entitySchemaFactory->get($entityId);
 
         $this->addFilter($childSchema, $query, $filter, $and, $table, $columnPath);
+    }
+
+    private function addMorphEntityCondition(
+        Builder $query,
+        MorphCondition $condition,
+        bool $and,
+    ) {
+        $propertyId = $condition->getProperty();
+        $filter = $condition->getFilter();
+        $isHas = $condition->getOperator() == EntityConditionOperator::Has;
+        $countOperator = $condition->getCountOperator()->value ?? '>=';
+        $count = $condition->getCount() ?? 1;
+
+        $callWhere = $isHas
+            ? ($and ? 'whereHasMorph' : 'orWhereHasMorph')
+            : ($and ? 'whereDoesntHaveMorph' : 'orWhereDoesntHaveMorph');
+
+        $callback = $filter
+            ? function ($subquery, $type) use ($filter) {
+                $schemaProperty = $this->entitySchemaFactory->get($type);
+                $this->addFilter($schemaProperty, $subquery, $filter);
+            }
+        : null;
+
+        $isHas
+            ? $query->$callWhere($propertyId, $condition->getEntities(), $callback, $countOperator, $count)
+            : $query->$callWhere($propertyId, $condition->getEntities(), $callback);
     }
 
     private function addRelationshipEntityCondition(

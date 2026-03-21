@@ -381,6 +381,195 @@ class QueryBuilderTest extends TestCase
         $query->get();
     }
 
+    public function test_build_entity_request_with_morph_condition()
+    {
+        Purchase::factory()->for(User::factory(), 'buyer')->create();
+
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'purchase',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'Has',
+                'property' => 'buyer',
+                'entities' => ['user'],
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => '=',
+                    'property' => 'first_name',
+                    'value' => 'john',
+                ],
+            ],
+        ]);
+
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "purchases" '.
+            'where (("purchases"."buyer_type" = \'user\' '.
+            'and exists (select * from "users" '.
+            'where "purchases"."buyer_id" = "users"."id" '.
+            'and "users"."first_name" = \'john\'))) '.
+            'order by "id" asc'
+        );
+        $this->assertEquals($rawSql, $query->toRawSql());
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
+    }
+
+    public function test_build_entity_request_with_morph_condition_without_filter()
+    {
+        Purchase::factory()->for(User::factory(), 'buyer')->create();
+
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'purchase',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'Has',
+                'property' => 'buyer',
+                'entities' => ['user'],
+            ],
+        ]);
+
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "purchases" '.
+            'where (("purchases"."buyer_type" = \'user\' '.
+            'and exists (select * from "users" '.
+            'where "purchases"."buyer_id" = "users"."id"))) '.
+            'order by "id" asc'
+        );
+        $this->assertEquals($rawSql, $query->toRawSql());
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
+    }
+
+    public function test_build_entity_request_with_morph_condition_doesnt_have()
+    {
+        Purchase::factory()->for(User::factory(), 'buyer')->create();
+
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'purchase',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has_not',
+                'property' => 'buyer',
+                'entities' => ['user'],
+                'filter' => [
+                    'type' => 'condition',
+                    'operator' => '=',
+                    'property' => 'first_name',
+                    'value' => 'john',
+                ],
+            ],
+        ]);
+
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "purchases" '.
+            'where (("purchases"."buyer_type" = \'user\' '.
+            'and not exists (select * from "users" '.
+            'where "purchases"."buyer_id" = "users"."id" '.
+            'and "users"."first_name" = \'john\'))) '.
+            'order by "id" asc'
+        );
+        $this->assertEquals($rawSql, $query->toRawSql());
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
+    }
+
+    public function test_build_entity_request_with_morph_condition_or_has()
+    {
+        Purchase::factory()->for(User::factory(), 'buyer')->create();
+
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'purchase',
+            'filter' => [
+                'type' => 'group',
+                'operator' => 'or',
+                'filters' => [
+                    [
+                        'type' => 'condition',
+                        'operator' => '=',
+                        'property' => 'amount',
+                        'value' => 100,
+                    ],
+                    [
+                        'type' => 'entity_condition',
+                        'operator' => 'has',
+                        'property' => 'buyer',
+                        'entities' => ['user'],
+                        'filter' => [
+                            'type' => 'condition',
+                            'operator' => '=',
+                            'property' => 'first_name',
+                            'value' => 'john',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "purchases" '.
+            'where ("purchases"."amount" = 100 '.
+            'or (("purchases"."buyer_type" = \'user\' '.
+            'and exists (select * from "users" '.
+            'where "purchases"."buyer_id" = "users"."id" '.
+            'and "users"."first_name" = \'john\')))) '.
+            'order by "id" asc'
+        );
+        $this->assertEquals($rawSql, $query->toRawSql());
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
+    }
+
+    public function test_build_entity_request_with_morph_condition_or_doesnt_have()
+    {
+        Purchase::factory()->for(User::factory(), 'buyer')->create();
+
+        $query = QueryBuilder::fromInputs([
+            'entity' => 'purchase',
+            'filter' => [
+                'type' => 'group',
+                'operator' => 'or',
+                'filters' => [
+                    [
+                        'type' => 'condition',
+                        'operator' => '=',
+                        'property' => 'amount',
+                        'value' => 100,
+                    ],
+                    [
+                        'type' => 'entity_condition',
+                        'operator' => 'has_not',
+                        'property' => 'buyer',
+                        'entities' => ['user'],
+                        'filter' => [
+                            'type' => 'condition',
+                            'operator' => '=',
+                            'property' => 'first_name',
+                            'value' => 'john',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $rawSql = $this->getRawSqlAccordingDriver(
+            'select * from "purchases" '.
+            'where ("purchases"."amount" = 100 '.
+            'or (("purchases"."buyer_type" = \'user\' '.
+            'and not exists (select * from "users" '.
+            'where "purchases"."buyer_id" = "users"."id" '.
+            'and "users"."first_name" = \'john\')))) '.
+            'order by "id" asc'
+        );
+        $this->assertEquals($rawSql, $query->toRawSql());
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
+    }
+
     public function test_build_entity_relationship_morph_one_or_many_sort_with_filter()
     {
         $query = QueryBuilder::fromInputs([
