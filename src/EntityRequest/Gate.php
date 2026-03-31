@@ -10,22 +10,19 @@ use Comhon\EntityRequester\DTOs\EntitySchema;
 use Comhon\EntityRequester\DTOs\Group;
 use Comhon\EntityRequester\DTOs\MorphCondition;
 use Comhon\EntityRequester\DTOs\Scope;
+use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Comhon\EntityRequester\Interfaces\RequestGateInterface;
 use Comhon\EntityRequester\Interfaces\RequestSchemaFactoryInterface;
-use Comhon\ModelResolverContract\ModelResolverInterface;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\Relation;
 
 class Gate implements RequestGateInterface
 {
     public function __construct(
         private RequestSchemaFactoryInterface $requestSchemaFactory,
         private EntitySchemaFactoryInterface $entitySchemaFactory,
-        private ModelResolverInterface $modelResolver,
     ) {}
 
     /**
@@ -54,10 +51,13 @@ class Gate implements RequestGateInterface
         }
     }
 
+    /**
+     * @param  Condition|Group|EntityCondition|MorphCondition|Scope  $filter
+     */
     private function authorizeFilter(EntitySchema $entitySchema, AbstractCondition $filter)
     {
         match (get_class($filter)) {
-            Condition::class => $this->authorizeCondition($entitySchema, $filter),
+            Condition::class => $this->authorizeFiltrableProperty($entitySchema, $filter->getProperty()),
             Group::class => $this->authorizeGroup($entitySchema, $filter),
             EntityCondition::class => $this->authorizeEntityCondition($entitySchema, $filter),
             MorphCondition::class => $this->authorizeMorphCondition($entitySchema, $filter),
@@ -80,11 +80,6 @@ class Gate implements RequestGateInterface
         return $property;
     }
 
-    private function authorizeCondition(EntitySchema $entitySchema, Condition $condition)
-    {
-        $this->authorizeFiltrableProperty($entitySchema, $condition->getProperty());
-    }
-
     private function authorizeGroup(EntitySchema $entitySchema, Group $group)
     {
         foreach ($group->getConditions() as $condition) {
@@ -102,28 +97,14 @@ class Gate implements RequestGateInterface
             return;
         }
 
-        if ($property['type'] === 'object') {
-            $childEntitySchema = $this->entitySchemaFactory->get($property['entity']);
-            $this->authorizeFilter($childEntitySchema, $filter);
-        } elseif ($property['type'] === 'relationship') {
-            $class = $this->modelResolver->getClass($entitySchema->getId());
-            $model = new $class;
-            $relation = $model->$propertyId();
-
-            $models = $relation instanceof MorphTo
-                ? $relation->getRelated()->newModelQuery()->distinct()->pluck($relation->getMorphType())
-                    ->filter()
-                    ->map(fn ($type) => new (Relation::getMorphedModel($type) ?? $type)())
-                    ->all()
-                : [$relation->getRelated()];
-
-            foreach ($models as $relatedModel) {
-                $relatedEntitySchema = $this->entitySchemaFactory->get(get_class($relatedModel));
-                $this->authorizeFilter($relatedEntitySchema, $filter);
-            }
-        } else {
-            throw new NotFiltrableException($propertyId);
+        if (! isset($property['entity'])) {
+            throw new InvalidEntityConditionException(
+                "Property '$propertyId' does not support entity condition filtering"
+            );
         }
+
+        $childEntitySchema = $this->entitySchemaFactory->get($property['entity']);
+        $this->authorizeFilter($childEntitySchema, $filter);
     }
 
     private function authorizeMorphCondition(EntitySchema $entitySchema, MorphCondition $condition)
@@ -133,13 +114,15 @@ class Gate implements RequestGateInterface
         $filter = $condition->getFilter();
 
         $allowedEntities = $property['entities'] ?? [];
-        foreach ($condition->getEntities() as $entityClass) {
-            $entityId = $this->modelResolver->getUniqueName($entityClass) ?? $entityClass;
-            if (! in_array($entityId, $allowedEntities)) {
-                throw new NotFiltrableException($propertyId);
+        foreach ($condition->getEntities() as $entityName) {
+            if (! in_array($entityName, $allowedEntities)) {
+                throw new InvalidEntityConditionException(
+                    "Entity '$entityName' is not allowed for morph property '$propertyId'"
+                );
             }
             if ($filter) {
-                $this->authorizeFilter($this->entitySchemaFactory->get($entityClass), $filter);
+                $entitySchema = $this->entitySchemaFactory->get($entityName);
+                $this->authorizeFilter($entitySchema, $filter);
             }
         }
     }

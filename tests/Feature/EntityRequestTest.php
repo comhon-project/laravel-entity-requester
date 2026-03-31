@@ -9,6 +9,7 @@ use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\DTOs\Group;
 use Comhon\EntityRequester\DTOs\MorphCondition;
 use Comhon\EntityRequester\DTOs\Scope;
+use Comhon\EntityRequester\EntityRequest\EntityRequestImporter;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
@@ -20,21 +21,21 @@ class EntityRequestTest extends TestCase
 {
     public function test_instanciate_entity_request_only_model()
     {
-        $entityRequest = new EntityRequest(['entity' => 'user']);
+        $entityRequest = app(EntityRequestImporter::class)->import(['entity' => 'user']);
 
         $this->assertEquals(User::class, $entityRequest->getModelClass());
     }
 
     public function test_instanciate_entity_request_redondant_model_class()
     {
-        $entityRequest = new EntityRequest(null, User::class);
+        $entityRequest = new EntityRequest(User::class);
 
         $this->assertEquals(User::class, $entityRequest->getModelClass());
     }
 
     public function test_instanciate_entity_request_redondant_model()
     {
-        $entityRequest = new EntityRequest(['entity' => 'user'], User::class);
+        $entityRequest = app(EntityRequestImporter::class)->import(['entity' => 'user'], User::class);
 
         $this->assertEquals(User::class, $entityRequest->getModelClass());
     }
@@ -42,36 +43,36 @@ class EntityRequestTest extends TestCase
     public function test_instanciate_entity_request_missmatch_model()
     {
         $this->expectExceptionMessage('entity and model class missmatch');
-        new EntityRequest(['entity' => 'visible'], User::class);
+        app(EntityRequestImporter::class)->import(['entity' => 'visible'], User::class);
     }
 
     public function test_instanciate_entity_request_missing_model()
     {
         $this->expectExceptionMessage("Property 'entity' is required");
-        new EntityRequest;
+        app(EntityRequestImporter::class)->import([]);
     }
 
     public function test_instanciate_entity_request_invalid_model()
     {
         $this->expectExceptionMessage("Invalid property 'entity', must be a entity name");
-        new EntityRequest(['entity' => 'foo']);
+        app(EntityRequestImporter::class)->import(['entity' => 'foo']);
     }
 
     public function test_instanciate_entity_request_invalid_model_class()
     {
         $this->expectExceptionMessage("model class must be instance of Illuminate\Database\Eloquent\Model");
-        new EntityRequest(null, 'foo');
+        new EntityRequest('foo');
     }
 
     public function test_instanciate_entity_request_invalid_model_type()
     {
         $this->expectExceptionMessage("Invalid property 'entity', must be a string");
-        new EntityRequest(['entity' => 123]);
+        app(EntityRequestImporter::class)->import(['entity' => 123]);
     }
 
     public function test_instanciate_entity_request_valid()
     {
-        $entityRequest = new EntityRequest([
+        $entityRequest = app(EntityRequestImporter::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -85,11 +86,11 @@ class EntityRequestTest extends TestCase
                     ],
                     [
                         'type' => 'scope',
-                        'name' => 'my_scope',
+                        'name' => 'validated',
                     ],
                     [
                         'type' => 'scope',
-                        'name' => 'my_scope',
+                        'name' => 'validated',
                         'parameters' => ['foo'],
                     ],
                     [
@@ -148,7 +149,7 @@ class EntityRequestTest extends TestCase
         /** @var Scope $scope */
         $scope = $filter->getConditions()[2];
         $this->assertInstanceOf(Scope::class, $scope);
-        $this->assertEquals('my_scope', $scope->getName());
+        $this->assertEquals('validated', $scope->getName());
         $this->assertEquals(['foo'], $scope->getParameters());
 
         /** @var EntityCondition $relationshipCondition */
@@ -179,7 +180,7 @@ class EntityRequestTest extends TestCase
         }
 
         $this->expectExceptionMessage($error);
-        new EntityRequest([
+        app(EntityRequestImporter::class)->import([
             'entity' => 'user',
             ...$data,
         ]);
@@ -382,7 +383,7 @@ class EntityRequestTest extends TestCase
 
     public function test_instanciate_entity_request_contains_scalar_value()
     {
-        $entityRequest = new EntityRequest([
+        $entityRequest = app(EntityRequestImporter::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'condition',
@@ -400,7 +401,7 @@ class EntityRequestTest extends TestCase
 
     public function test_instanciate_entity_request_contains_array_value()
     {
-        $entityRequest = new EntityRequest([
+        $entityRequest = app(EntityRequestImporter::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'condition',
@@ -419,7 +420,7 @@ class EntityRequestTest extends TestCase
     #[DataProvider('providerBoolean')]
     public function test_add_filter_abstract_condition(bool $and)
     {
-        $entityRequest = new EntityRequest(['entity' => 'user']);
+        $entityRequest = new EntityRequest(User::class);
 
         $condition = new Condition('foo', ConditionOperator::Equal, 'bar');
         $entityRequest->addFilter($condition, $and);
@@ -435,7 +436,7 @@ class EntityRequestTest extends TestCase
     #[DataProvider('providerBoolean')]
     public function test_add_filter_array(bool $and)
     {
-        $entityRequest = new EntityRequest(['entity' => 'user']);
+        $entityRequest = new EntityRequest(User::class);
 
         $conditions = [
             new Condition('foo', ConditionOperator::Equal, 'bar'),
@@ -452,7 +453,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_filter_same_operator()
     {
-        $entityRequest = new EntityRequest(['entity' => 'user']);
+        $entityRequest = new EntityRequest(User::class);
 
         $groupOr = new Group(GroupOperator::Or);
         $groupOr->add(new Condition('foo', ConditionOperator::Equal, 'bar'));
@@ -469,7 +470,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_filter_different_operator()
     {
-        $entityRequest = new EntityRequest(['entity' => 'user']);
+        $entityRequest = new EntityRequest(User::class);
 
         $groupOr = new Group(GroupOperator::Or);
         $groupOr->add(new Condition('foo', ConditionOperator::Equal, 'bar'));
@@ -490,7 +491,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_filter_empty_array()
     {
-        $entityRequest = new EntityRequest(['entity' => 'user']);
+        $entityRequest = new EntityRequest(User::class);
 
         $entityRequest->addFilter([]);
         $this->assertNull($entityRequest->getFilter());
@@ -498,7 +499,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_filter_array_invalid()
     {
-        $entityRequest = new EntityRequest(['entity' => 'user']);
+        $entityRequest = new EntityRequest(User::class);
 
         $this->expectExceptionMessage('each filters element must be instance of AbstractCondition');
         $entityRequest->addFilter(['foo']);
@@ -506,7 +507,7 @@ class EntityRequestTest extends TestCase
 
     public function test_add_sort()
     {
-        $entityRequest = new EntityRequest(['entity' => 'user']);
+        $entityRequest = new EntityRequest(User::class);
 
         $entityRequest->addSort('foo');
         $entityRequest->addSort('bar', OrderDirection::Desc);
@@ -519,12 +520,12 @@ class EntityRequestTest extends TestCase
 
     public function test_instanciate_morph_condition_with_entities()
     {
-        $entityRequest = new EntityRequest([
-            'entity' => 'user',
+        $entityRequest = app(EntityRequestImporter::class)->import([
+            'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
                 'operator' => 'has',
-                'property' => 'foo',
+                'property' => 'buyer',
                 'entities' => ['user'],
             ],
         ]);
@@ -532,18 +533,18 @@ class EntityRequestTest extends TestCase
         $filter = $entityRequest->getFilter();
         $this->assertInstanceOf(MorphCondition::class, $filter);
         $this->assertEquals(EntityConditionOperator::Has, $filter->getOperator());
-        $this->assertEquals('foo', $filter->getProperty());
-        $this->assertEquals([User::class], $filter->getEntities());
+        $this->assertEquals('buyer', $filter->getProperty());
+        $this->assertEquals(['user'], $filter->getEntities());
     }
 
     public function test_instanciate_morph_condition_with_entities_and_filter()
     {
-        $entityRequest = new EntityRequest([
-            'entity' => 'user',
+        $entityRequest = app(EntityRequestImporter::class)->import([
+            'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
                 'operator' => 'has',
-                'property' => 'foo',
+                'property' => 'buyer',
                 'entities' => ['user'],
                 'filter' => [
                     'type' => 'condition',
@@ -562,12 +563,12 @@ class EntityRequestTest extends TestCase
     public function test_instanciate_morph_condition_invalid_entities_empty()
     {
         $this->expectExceptionMessage('must be a non-empty array of strings');
-        new EntityRequest([
-            'entity' => 'user',
+        app(EntityRequestImporter::class)->import([
+            'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
                 'operator' => 'has',
-                'property' => 'foo',
+                'property' => 'buyer',
                 'entities' => [],
             ],
         ]);
@@ -576,12 +577,12 @@ class EntityRequestTest extends TestCase
     public function test_instanciate_morph_condition_invalid_entities_not_array()
     {
         $this->expectExceptionMessage('must be a non-empty array of strings');
-        new EntityRequest([
-            'entity' => 'user',
+        app(EntityRequestImporter::class)->import([
+            'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
                 'operator' => 'has',
-                'property' => 'foo',
+                'property' => 'buyer',
                 'entities' => 'user',
             ],
         ]);
@@ -590,27 +591,13 @@ class EntityRequestTest extends TestCase
     public function test_instanciate_morph_condition_invalid_entities_not_strings()
     {
         $this->expectExceptionMessage('must be a non-empty array of strings');
-        new EntityRequest([
-            'entity' => 'user',
+        app(EntityRequestImporter::class)->import([
+            'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
                 'operator' => 'has',
-                'property' => 'foo',
+                'property' => 'buyer',
                 'entities' => [123],
-            ],
-        ]);
-    }
-
-    public function test_instanciate_morph_condition_invalid_entity_name()
-    {
-        $this->expectExceptionMessage('must be a entity name');
-        new EntityRequest([
-            'entity' => 'user',
-            'filter' => [
-                'type' => 'entity_condition',
-                'operator' => 'has',
-                'property' => 'foo',
-                'entities' => ['nonexistent'],
             ],
         ]);
     }

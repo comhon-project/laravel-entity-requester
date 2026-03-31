@@ -2,30 +2,30 @@
 
 namespace Comhon\EntityRequester\EntityRequest;
 
+use Carbon\Carbon;
 use Comhon\EntityRequester\Database\RelationJoiner;
 use Comhon\EntityRequester\Database\Utils;
 use Comhon\EntityRequester\DTOs\AbstractCondition;
 use Comhon\EntityRequester\DTOs\Condition;
 use Comhon\EntityRequester\DTOs\EntityCondition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
-use Comhon\EntityRequester\DTOs\EntitySchema;
 use Comhon\EntityRequester\DTOs\Group;
 use Comhon\EntityRequester\DTOs\MorphCondition;
 use Comhon\EntityRequester\DTOs\Scope;
+use Comhon\EntityRequester\Enums\AggregationFunction;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
-use Comhon\EntityRequester\Exceptions\InvalidOperatorForPropertyTypeException;
-use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
-use Comhon\EntityRequester\Exceptions\NotFiltrableException;
-use Comhon\EntityRequester\Exceptions\NotSortableException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
-use Comhon\EntityRequester\Exceptions\PropertyNotFoundException;
+use Comhon\EntityRequester\Exceptions\UnknownMorphEntityException;
 use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
+use Comhon\ModelResolverContract\ModelResolverInterface;
+use DateTime;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -45,6 +45,8 @@ class QueryBuilder
     public function __construct(
         private EntitySchemaFactoryInterface $entitySchemaFactory,
         private ConditionOperatorManagerInterface $operatorManager,
+        private ModelResolverInterface $modelResolver,
+        private EntityRequestImporter $importer,
     ) {}
 
     /**
@@ -52,7 +54,7 @@ class QueryBuilder
      */
     public function fromInputs(array $inputs, ?string $modelClass = null): Builder
     {
-        return static::fromEntityRequest(new EntityRequest($inputs, $modelClass));
+        return $this->fromEntityRequest($this->importer->import($inputs, $modelClass));
     }
 
     /**
@@ -60,63 +62,23 @@ class QueryBuilder
      */
     public function fromEntityRequest(EntityRequest $entityRequest): Builder
     {
-        $builder = app(static::class);
         $class = $entityRequest->getModelClass();
-        $schema = $builder->entitySchemaFactory->get($class);
 
         /** @var Builder $query */
         $query = $class::query();
-        $builder->addSort($query, $entityRequest->getSort());
+        $this->addSort($query, $entityRequest->getSort());
 
         if ($entityRequest->getFilter()) {
-            $builder->addFilter($schema, $query, $entityRequest->getFilter());
+            $this->addFilter($query, $entityRequest->getFilter());
         }
 
         return $query;
-    }
-
-    private function addSort(Builder $query, ?array $sort = null)
-    {
-        $class = get_class($query->getModel());
-        $schema = $this->entitySchemaFactory->get($class);
-        if (! empty($sort)) {
-            foreach ($sort as $sortElement) {
-                $property = $sortElement['property'];
-
-                if (str_contains($property, '.')) {
-                    $segments = explode('.', $property);
-                    $rootPropertyId = $segments[0];
-                    $rootProperty = $schema->getProperty($rootPropertyId);
-
-                    if (! $rootProperty) {
-                        throw new PropertyNotFoundException($rootPropertyId, $schema->getId());
-                    }
-
-                    if ($rootProperty['type'] === 'object') {
-                        $query->orderBy(implode('->', $segments), $sortElement['order']->value);
-                    } elseif ($rootProperty['type'] === 'relationship') {
-                        $this->addRelationshipSort($query, $sortElement);
-                    } else {
-                        throw new NotSortableException($rootPropertyId);
-                    }
-                } else {
-                    $query->orderBy($property, $sortElement['order']->value);
-                }
-            }
-        } elseif ($defaultSort = $schema->getDefaultSort()) {
-            foreach ($defaultSort as $sort) {
-                $query->orderBy($sort['property'], $sort['order'] ?? 'asc');
-            }
-        } else {
-            $query->orderBy($query->getModel()->getKeyName());
-        }
     }
 
     /**
      * @param  string  $table  if specified, column name will be prefixed by given table name
      */
     private function addFilter(
-        EntitySchema $schema,
         Builder|JoinClause $query,
         AbstractCondition $filter,
         bool $and = true,
@@ -124,14 +86,15 @@ class QueryBuilder
         ?string $jsonPathPrefix = null,
     ): Builder|JoinClause {
         match (get_class($filter)) {
-            Condition::class => $this->addCondition($schema, $query, $filter, $and, $table, $jsonPathPrefix),
-            Group::class => $this->addGroup($schema, $query, $filter, $and, $table, $jsonPathPrefix),
-            EntityCondition::class, MorphCondition::class => $this->addEntityCondition($schema, $query, $filter, $and, $table, $jsonPathPrefix),
+            Condition::class => $this->addCondition($query, $filter, $and, $table, $jsonPathPrefix),
+            Group::class => $this->addGroup($query, $filter, $and, $table, $jsonPathPrefix),
+            EntityCondition::class => $this->addEntityCondition($query, $filter, $and, $table, $jsonPathPrefix),
+            MorphCondition::class => $this->addMorphEntityCondition($query, $filter, $and),
             Scope::class => $jsonPathPrefix !== null
                 ? throw new InvalidEntityConditionException(
                     'Scopes are not supported inside object entity conditions'
                 )
-                : $this->addScope($schema, $query, $filter, $and),
+                : $this->addScope($query, $filter, $and),
         };
 
         return $query;
@@ -141,7 +104,6 @@ class QueryBuilder
      * @param  string  $table  if specified, column name will be prefixed by given table name
      */
     private function addCondition(
-        EntitySchema $schema,
         Builder|JoinClause $query,
         Condition $condition,
         bool $and = true,
@@ -162,18 +124,6 @@ class QueryBuilder
         $column = $jsonPathPrefix
             ? "$table.{$jsonPathPrefix}->{$propertyId}"
             : "$table.{$propertyId}";
-        $property = $schema->getProperty($propertyId);
-        if (! $property) {
-            throw new PropertyNotFoundException($propertyId, $schema->getId());
-        }
-        $propertyType = $property['type'];
-
-        $allowedOperators = $this->operatorManager->getOperatorsForPropertyType($propertyType);
-
-        if (! in_array($operator, $allowedOperators)) {
-            throw new InvalidOperatorForPropertyTypeException($operator, $propertyType, $allowedOperators);
-        }
-
         if (! $this->operatorManager->isSupported($operator)) {
             throw new NotSupportedOperatorException($operator);
         }
@@ -217,16 +167,15 @@ class QueryBuilder
      * @param  string  $table  if specified, column name will be prefixed by given table name
      */
     private function addGroup(
-        EntitySchema $schema,
         Builder|JoinClause $query,
         Group $group,
         bool $and,
         ?string $table = null,
         ?string $jsonPathPrefix = null,
     ) {
-        $function = function ($subQuery) use ($schema, $group, $table, $jsonPathPrefix) {
+        $function = function ($subQuery) use ($group, $table, $jsonPathPrefix) {
             foreach ($group->getConditions() as $condition) {
-                $this->addFilter($schema, $subQuery, $condition, $group->getOperator() == GroupOperator::And, $table, $jsonPathPrefix);
+                $this->addFilter($subQuery, $condition, $group->getOperator() == GroupOperator::And, $table, $jsonPathPrefix);
             }
         };
         if ($and) {
@@ -237,7 +186,6 @@ class QueryBuilder
     }
 
     private function addEntityCondition(
-        EntitySchema $schema,
         Builder $query,
         EntityCondition $condition,
         bool $and,
@@ -245,25 +193,48 @@ class QueryBuilder
         ?string $jsonPathPrefix = null,
     ) {
         $propertyId = $condition->getProperty();
-        $filter = $condition->getFilter();
-        $property = $schema->getProperty($propertyId);
-        if (! $property) {
-            throw new PropertyNotFoundException($propertyId, $schema->getId());
-        }
+        $model = $query->getModel();
+        $isRelation = method_exists($model, $propertyId) && $model->$propertyId() instanceof Relation;
 
-        if ($condition instanceof MorphCondition) {
-            $this->addMorphEntityCondition($query, $condition, $and);
-        } elseif ($property['type'] === 'object') {
-            $this->addObjectEntityCondition($schema, $query, $condition, $and, $table, $jsonPathPrefix);
-        } elseif ($property['type'] === 'relationship') {
-            $this->addRelationshipEntityCondition($schema, $query, $condition, $and, $table);
+        if ($isRelation) {
+            $this->addRelationshipEntityCondition($query, $condition, $and, $table);
         } else {
-            throw new NotFiltrableException($propertyId);
+            $this->addObjectEntityCondition($query, $condition, $and, $table, $jsonPathPrefix);
         }
     }
 
+    private function addRelationshipEntityCondition(
+        Builder $query,
+        EntityCondition $condition,
+        bool $and,
+        ?string $table,
+    ) {
+        $propertyId = $condition->getProperty();
+        $filter = $condition->getFilter();
+        $isHas = $condition->getOperator() == EntityConditionOperator::Has;
+        $countOperator = $condition->getCountOperator()->value ?? '>=';
+        $count = $condition->getCount() ?? 1;
+
+        $callWhere = $isHas
+            ? ($and ? 'whereHas' : 'orWhereHas')
+            : ($and ? 'whereDoesntHave' : 'orWhereDoesntHave');
+
+        $callback = $filter
+            ? function ($subquery) use ($filter, $table) {
+                if ($table) {
+                    $first = explode('.', $subquery->getQuery()->wheres[0]['first']);
+                    $subquery->getQuery()->wheres[0]['first'] = $table.".{$first[1]}";
+                }
+                $this->addFilter($subquery, $filter);
+            }
+        : null;
+
+        $isHas
+            ? $query->$callWhere($propertyId, $callback, $countOperator, $count)
+            : $query->$callWhere($propertyId, $callback);
+    }
+
     private function addObjectEntityCondition(
-        EntitySchema $schema,
         Builder $query,
         EntityCondition $condition,
         bool $and,
@@ -304,10 +275,7 @@ class QueryBuilder
             return;
         }
 
-        $entityId = $schema->getProperty($propertyId)['entity'];
-        $childSchema = $this->entitySchemaFactory->get($entityId);
-
-        $this->addFilter($childSchema, $query, $filter, $and, $table, $columnPath);
+        $this->addFilter($query, $filter, $and, $table, $columnPath);
     }
 
     private function addMorphEntityCondition(
@@ -321,100 +289,109 @@ class QueryBuilder
         $countOperator = $condition->getCountOperator()->value ?? '>=';
         $count = $condition->getCount() ?? 1;
 
+        $entityClasses = array_map(
+            fn ($name) => $this->modelResolver->getClass($name) ?? throw new UnknownMorphEntityException($name),
+            $condition->getEntities()
+        );
+
         $callWhere = $isHas
             ? ($and ? 'whereHasMorph' : 'orWhereHasMorph')
             : ($and ? 'whereDoesntHaveMorph' : 'orWhereDoesntHaveMorph');
 
         $callback = $filter
             ? function ($subquery, $type) use ($filter) {
-                $schemaProperty = $this->entitySchemaFactory->get($type);
-                $this->addFilter($schemaProperty, $subquery, $filter);
+                $this->addFilter($subquery, $filter);
             }
         : null;
 
         $isHas
-            ? $query->$callWhere($propertyId, $condition->getEntities(), $callback, $countOperator, $count)
-            : $query->$callWhere($propertyId, $condition->getEntities(), $callback);
+            ? $query->$callWhere($propertyId, $entityClasses, $callback, $countOperator, $count)
+            : $query->$callWhere($propertyId, $entityClasses, $callback);
     }
 
-    private function addRelationshipEntityCondition(
-        EntitySchema $schema,
-        Builder $query,
-        EntityCondition $condition,
-        bool $and,
-        ?string $table,
-    ) {
-        $propertyId = $condition->getProperty();
-        $filter = $condition->getFilter();
-        $isHas = $condition->getOperator() == EntityConditionOperator::Has;
-        $countOperator = $condition->getCountOperator()->value ?? '>=';
-        $count = $condition->getCount() ?? 1;
-
-        $callWhere = $isHas
-            ? ($and ? 'whereHas' : 'orWhereHas')
-            : ($and ? 'whereDoesntHave' : 'orWhereDoesntHave');
-
-        $callback = $filter
-            ? function ($subquery, $type = null) use ($query, $propertyId, $filter, $table) {
-                if ($table) {
-                    $first = explode('.', $subquery->getQuery()->wheres[0]['first']);
-                    $subquery->getQuery()->wheres[0]['first'] = $table.".{$first[1]}";
-                }
-                $relation = $query->getRelation($propertyId);
-                $class = $relation instanceof MorphTo
-                    ? (Relation::getMorphedModel($type) ?? $type)
-                    : get_class($relation->getRelated());
-
-                $schemaProperty = $this->entitySchemaFactory->get($class);
-                $this->addFilter($schemaProperty, $subquery, $filter);
-            }
-        : null;
-
-        $isHas
-            ? $query->$callWhere($propertyId, $callback, $countOperator, $count)
-            : $query->$callWhere($propertyId, $callback);
-    }
-
-    private function addScope(EntitySchema $schema, Builder $query, Scope $scope, bool $and)
+    private function addScope(Builder $query, Scope $scope, bool $and)
     {
         $scopeName = $scope->getName();
-        try {
-            $scopeParameters = $scope->getParameters() ?? [];
-            $schemaScopes = $schema->getScope($scopeName);
+        $scopeParameters = $this->castScopeParameters($query->getModel(), $scopeName, $scope->getParameters() ?? []);
 
-            $model = $query->getModel();
-            $scopeMethod = 'scope'.ucfirst($scopeName);
-            if (! method_exists($model, $scopeMethod)) {
-                // tagged method as scope with attribute
-                $scopeMethod = $scopeName;
+        $callWhere = $and ? 'where' : 'orWhere';
+        $query->$callWhere(function ($subquery) use ($scopeName, $scopeParameters) {
+            $subquery->$scopeName(...$scopeParameters);
+        });
+    }
+
+    private function castScopeParameters(Model $model, string $scopeName, array $parameters): array
+    {
+        $scopeMethod = 'scope'.ucfirst($scopeName);
+        if (! method_exists($model, $scopeMethod)) {
+            $scopeMethod = $scopeName;
+        }
+
+        $reflection = new ReflectionMethod($model, $scopeMethod);
+        $methodParameters = $reflection->getParameters();
+        array_shift($methodParameters);
+
+        foreach ($methodParameters as $index => $methodParameter) {
+            if (! array_key_exists($index, $parameters)) {
+                break;
             }
-            $reflection = new ReflectionMethod($model, $scopeMethod);
-            $methodParameters = $reflection->getParameters();
-            array_shift($methodParameters);
+            $type = $methodParameter->getType();
+            if (! $type) {
+                continue;
+            }
+            $typeName = $type->getName();
+            if (is_a($typeName, Carbon::class, true) || is_a($typeName, DateTime::class, true)) {
+                $parameters[$index] = Carbon::parse($parameters[$index]);
+            } elseif (enum_exists($typeName)) {
+                $parameters[$index] = $typeName::from($parameters[$index]);
+            }
+        }
 
-            foreach ($schemaScopes['parameters'] ?? [] as $index => $schemaParameter) {
-                if (isset($schemaParameter['enum'])) {
-                    $type = $methodParameters[$index]->getType()->getName();
-                    if (enum_exists($type)) {
-                        $scopeParameters[$index] = $type::from($scopeParameters[$index]);
+        return $parameters;
+    }
+
+    private function addSort(Builder $query, ?array $sort = null)
+    {
+        $model = $query->getModel();
+        $schema = $this->entitySchemaFactory->get(get_class($model));
+
+        if (! empty($sort)) {
+            // Multiple to-many sorts with count/sum/avg produce a cartesian product
+            // between joined tables, which corrupts aggregation results.
+            // min/max are not affected since duplicates don't change their result.
+            $hasUnsafeAggregation = false;
+            foreach ($sort as $sortElement) {
+                $property = $sortElement['property'];
+
+                if (str_contains($property, '.')) {
+                    $segments = explode('.', $property);
+                    $rootPropertyId = $segments[0];
+
+                    if (method_exists($model, $rootPropertyId) && $model->$rootPropertyId() instanceof Relation) {
+                        $isUnsafeAggregation = $this->addRelationshipSort($query, $sortElement);
+                        if ($isUnsafeAggregation) {
+                            if ($hasUnsafeAggregation) {
+                                throw new InvalidToManySortException($property);
+                            }
+                            $hasUnsafeAggregation = true;
+                        }
+                    } else {
+                        $query->orderBy(implode('->', $segments), $sortElement['order']->value);
                     }
+                } else {
+                    $query->orderBy($property, $sortElement['order']->value);
                 }
             }
-
-            $callWhere = $and ? 'where' : 'orWhere';
-            $query->$callWhere(function ($subquery) use ($scopeName, $scopeParameters) {
-                try {
-                    $subquery->$scopeName(...$scopeParameters);
-                } catch (\Throwable $th) {
-                    throw new InvalidScopeParametersException($scopeName);
-                }
-            });
-        } catch (\Throwable $th) {
-            throw new InvalidScopeParametersException($scopeName);
+        } elseif ($defaultSort = $schema->getDefaultSort()) {
+            foreach ($defaultSort as $sort) {
+                $query->orderBy($sort['property'], $sort['order'] ?? 'asc');
+            }
+        } else {
+            $query->orderBy($model->getKeyName());
         }
     }
 
-    private function addRelationshipSort(Builder $query, array $relationshipSort)
+    private function addRelationshipSort(Builder $query, array $relationshipSort): bool
     {
         $explodedProperty = explode('.', $relationshipSort['property']);
         $parentModel = $query->getModel();
@@ -426,24 +403,18 @@ class QueryBuilder
 
         for ($i = 0; $i < count($explodedProperty) - 1; $i++) {
             $segmentName = $explodedProperty[$i];
-            $schema = $this->entitySchemaFactory->get(get_class($parentModel));
-            $segmentProperty = $schema->getProperty($segmentName);
 
-            if (! $segmentProperty) {
-                throw new PropertyNotFoundException($segmentName, $schema->getId());
-            }
-
-            if ($segmentProperty['type'] === 'object') {
+            if (! method_exists($parentModel, $segmentName)) {
                 break;
             }
-
-            $isLastModel = $i == count($explodedProperty) - 2;
-            $currentFilter = $isLastModel ? $filter : null;
 
             $relation = $parentModel->query()->getRelation($segmentName);
             if ($relation instanceof MorphTo) {
                 throw new \Exception('MorphTo relations not managed for sorting');
             }
+
+            $isLastModel = $i == count($explodedProperty) - 2;
+            $currentFilter = $isLastModel ? $filter : null;
 
             if ($isToOne && ! ($relation instanceof HasOne
                 || $relation instanceof BelongsTo
@@ -478,15 +449,20 @@ class QueryBuilder
 
         if ($isToOne) {
             $query->orderBy($qualifedProperty, $order);
-        } else {
-            if (! isset($relationshipSort['aggregation'])) {
-                throw new InvalidToManySortException($relationshipSort['property']);
-            }
-            $aggregation = $relationshipSort['aggregation']->value;
-            $qualifedProperty = DB::getQueryGrammar()->wrap($qualifedProperty);
-            $query->groupBy("{$requestedModel->getTable()}.{$requestedModel->getKeyName()}")
-                ->orderByRaw("{$aggregation}({$qualifedProperty}) {$order}");
+
+            return false;
         }
+
+        if (! isset($relationshipSort['aggregation'])) {
+            throw new InvalidToManySortException($relationshipSort['property']);
+        }
+
+        $aggregation = $relationshipSort['aggregation'];
+        $qualifedProperty = DB::getQueryGrammar()->wrap($qualifedProperty);
+        $query->groupBy("{$requestedModel->getTable()}.{$requestedModel->getKeyName()}")
+            ->orderByRaw("{$aggregation->value}({$qualifedProperty}) {$order}");
+
+        return in_array($aggregation, [AggregationFunction::Count, AggregationFunction::Sum, AggregationFunction::Avg]);
     }
 
     private function addJoinSub(
@@ -525,8 +501,7 @@ class QueryBuilder
         // the filter must be set on the subquery before doing the join
         // otherwise it is not taken in account
         if ($filter) {
-            $foreignSchema = $this->entitySchemaFactory->get(get_class($relation->getRelated()));
-            $this->addFilter($foreignSchema, $eloquentSubQuery, $filter);
+            $this->addFilter($eloquentSubQuery, $filter);
         }
 
         $query->joinSub(
@@ -552,16 +527,15 @@ class QueryBuilder
 
         if ($filter) {
             $relatedModel = $relation->getRelated();
-            $foreignSchema = $this->entitySchemaFactory->get(get_class($relatedModel));
             $originalQueryModel = $query->getModel();
             $query->setModel($relatedModel);
             if ($this->hasFilterClass($filter, EntityCondition::class)) {
-                $this->addFilter($foreignSchema, $query, $filter, true, $aliasRight)
+                $this->addFilter($query, $filter, true, $aliasRight)
                     ->orWhereNull("{$aliasRight}.{$relatedModel->getKeyName()}");
             } else {
                 $joins = $query->getQuery()->joins;
                 $join = $joins[array_key_last($joins)];
-                $this->addFilter($foreignSchema, $join, $filter, true);
+                $this->addFilter($join, $filter, true);
                 $query->getQuery()->addBinding($join->getBindings(), 'where');
             }
             $query->setModel($originalQueryModel);
