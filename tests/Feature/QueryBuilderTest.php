@@ -36,7 +36,7 @@ class QueryBuilderTest extends TestCase
     {
         $query = QueryBuilder::fromInputs([], User::class);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select * from "users" order by "name" asc, "first_name" asc');
+        $rawSql = $this->getRawSqlAccordingDriver('select * from "users" order by "id" asc');
         $this->assertEquals($rawSql, $query->toRawSql());
     }
 
@@ -46,7 +46,7 @@ class QueryBuilderTest extends TestCase
             'entity' => 'user',
         ]);
 
-        $rawSql = $this->getRawSqlAccordingDriver('select * from "users" order by "name" asc, "first_name" asc');
+        $rawSql = $this->getRawSqlAccordingDriver('select * from "users" order by "id" asc');
         $this->assertEquals($rawSql, $query->toRawSql($rawSql));
     }
 
@@ -96,7 +96,7 @@ class QueryBuilderTest extends TestCase
         $query = QueryBuilder::fromEntityRequest($entityRequest);
 
         $sqlOperator = app(ConditionOperatorManagerInterface::class)->getSqlOperator($operator);
-        $sql = 'select * from "users" where "users"."email"::text '.$sqlOperator.' ? order by "name" asc, "first_name" asc';
+        $sql = 'select * from "users" where "users"."email"::text '.$sqlOperator.' ? order by "id" asc';
         $this->assertEquals($sql, $query->toSql());
     }
 
@@ -305,7 +305,7 @@ class QueryBuilderTest extends TestCase
             "\"users\".\"age\" in (10, 20) $operator ".
             "\"users\".\"age\" not in (30, 40) $operator ".
             '("users"."age" = 25)'.
-            ') order by "name" asc, "first_name" asc'
+            ') order by "id" asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -339,7 +339,7 @@ class QueryBuilderTest extends TestCase
         $rawSql = $this->getRawSqlAccordingDriver(
             'select * from "users" '.
             'where (("age" = 25)) '.
-            'order by "name" asc, "first_name" asc'
+            'order by "id" asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
 
@@ -1116,9 +1116,9 @@ class QueryBuilderTest extends TestCase
         }
 
         if ($driver !== 'sqlite' && $driver !== 'pgsql') {
-            $rawSql = 'select * from `users` where ('.$containsSql.' '.$operator.' '.$notContainsSql.') order by `name` asc, `first_name` asc';
+            $rawSql = 'select * from `users` where ('.$containsSql.' '.$operator.' '.$notContainsSql.') order by `id` asc';
         } else {
-            $rawSql = 'select * from "users" where ('.$containsSql.' '.$operator.' '.$notContainsSql.') order by "name" asc, "first_name" asc';
+            $rawSql = 'select * from "users" where ('.$containsSql.' '.$operator.' '.$notContainsSql.') order by "id" asc';
         }
 
         $this->assertEquals($rawSql, $query->toRawSql());
@@ -1235,7 +1235,7 @@ class QueryBuilderTest extends TestCase
         ]);
 
         $rawSql = $this->getRawSqlAccordingDriver(
-            'select * from "users" where "users"."metadata" is not null order by "name" asc, "first_name" asc'
+            'select * from "users" where "users"."metadata" is not null order by "id" asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
         $query->get();
@@ -1253,7 +1253,7 @@ class QueryBuilderTest extends TestCase
         ]);
 
         $rawSql = $this->getRawSqlAccordingDriver(
-            'select * from "users" where "users"."metadata" is null order by "name" asc, "first_name" asc'
+            'select * from "users" where "users"."metadata" is null order by "id" asc'
         );
         $this->assertEquals($rawSql, $query->toRawSql());
         $query->get();

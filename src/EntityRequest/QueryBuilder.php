@@ -21,7 +21,6 @@ use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
 use Comhon\EntityRequester\Exceptions\UnknownMorphEntityException;
 use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
-use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use DateTime;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,7 +42,6 @@ use ReflectionMethod;
 class QueryBuilder
 {
     public function __construct(
-        private EntitySchemaFactoryInterface $entitySchemaFactory,
         private ConditionOperatorManagerInterface $operatorManager,
         private ModelResolverInterface $modelResolver,
         private EntityRequestImporter $importer,
@@ -353,7 +351,6 @@ class QueryBuilder
     private function addSort(Builder $query, ?array $sort = null)
     {
         $model = $query->getModel();
-        $schema = $this->entitySchemaFactory->get(get_class($model));
 
         if (! empty($sort)) {
             // Multiple to-many sorts with count/sum/avg produce a cartesian product
@@ -381,10 +378,6 @@ class QueryBuilder
                 } else {
                     $query->orderBy($property, $sortElement['order']->value);
                 }
-            }
-        } elseif ($defaultSort = $schema->getDefaultSort()) {
-            foreach ($defaultSort as $sort) {
-                $query->orderBy($sort['property'], $sort['order'] ?? 'asc');
             }
         } else {
             $query->orderBy($model->getKeyName());

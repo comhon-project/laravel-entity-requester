@@ -29,7 +29,7 @@ class EntitySchemaTest extends TestCase
 
         $this->assertEquals(
             [['property' => 'name'], ['property' => 'first_name']],
-            $schema->getDefaultSort()
+            $schema->getNaturalSort()
         );
     }
 }

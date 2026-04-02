@@ -76,8 +76,8 @@ class EntitySchema
         return $this->entities;
     }
 
-    public function getDefaultSort(): ?array
+    public function getNaturalSort(): ?array
     {
-        return $this->data['default_sort'] ?? null;
+        return $this->data['natural_sort'] ?? null;
     }
 }

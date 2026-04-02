@@ -211,7 +211,7 @@
             ]
         }
     ],
-    "default_sort": [{ "property": "name" }, { "property": "first_name" }],
+    "natural_sort": [{ "property": "name" }, { "property": "first_name" }],
     "entities": {
         "metadata": {
             "properties": [
