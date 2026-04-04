@@ -126,12 +126,24 @@ class SchemaConsistencyValidatorTest extends TestCase
         $this->validator()->validate($entityRequest);
     }
 
-    public function test_entity_condition_on_morph_to_throws()
+    public function test_entity_condition_on_morph_to_without_filter()
+    {
+        $entityRequest = new EntityRequest(Purchase::class);
+        $entityRequest->setFilter(new EntityCondition('buyer', EntityConditionOperator::Has));
+        $this->validator()->validate($entityRequest);
+        $this->assertTrue(true);
+    }
+
+    public function test_entity_condition_on_morph_to_with_filter_throws()
     {
         $this->expectException(MorphEntitiesRequiredException::class);
 
         $entityRequest = new EntityRequest(Purchase::class);
-        $entityRequest->setFilter(new EntityCondition('buyer', EntityConditionOperator::Has));
+        $entityRequest->setFilter(new EntityCondition(
+            'buyer',
+            EntityConditionOperator::Has,
+            new Condition('email', ConditionOperator::Equal, 'john@example.com'),
+        ));
         $this->validator()->validate($entityRequest);
     }
 

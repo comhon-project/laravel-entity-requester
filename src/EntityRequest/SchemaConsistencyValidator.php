@@ -100,7 +100,11 @@ class SchemaConsistencyValidator
         }
 
         if (($property['relationship_type'] ?? null) === 'morph_to') {
-            throw new MorphEntitiesRequiredException($propertyId);
+            if ($condition->getFilter()) {
+                throw new MorphEntitiesRequiredException($propertyId);
+            }
+
+            return;
         }
 
         if (! isset($property['entity'])) {

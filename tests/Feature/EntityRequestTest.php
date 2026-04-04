@@ -560,10 +560,9 @@ class EntityRequestTest extends TestCase
         $this->assertInstanceOf(Condition::class, $filter->getFilter());
     }
 
-    public function test_instanciate_morph_condition_invalid_entities_empty()
+    public function test_instanciate_entity_condition_with_empty_entities()
     {
-        $this->expectExceptionMessage('must be a non-empty array of strings');
-        app(EntityRequestImporter::class)->import([
+        $entityRequest = app(EntityRequestImporter::class)->import([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
@@ -572,6 +571,24 @@ class EntityRequestTest extends TestCase
                 'entities' => [],
             ],
         ]);
+
+        $this->assertInstanceOf(EntityCondition::class, $entityRequest->getFilter());
+        $this->assertNotInstanceOf(MorphCondition::class, $entityRequest->getFilter());
+    }
+
+    public function test_instanciate_entity_condition_without_entities()
+    {
+        $entityRequest = app(EntityRequestImporter::class)->import([
+            'entity' => 'purchase',
+            'filter' => [
+                'type' => 'entity_condition',
+                'operator' => 'has',
+                'property' => 'buyer',
+            ],
+        ]);
+
+        $this->assertInstanceOf(EntityCondition::class, $entityRequest->getFilter());
+        $this->assertNotInstanceOf(MorphCondition::class, $entityRequest->getFilter());
     }
 
     public function test_instanciate_morph_condition_invalid_entities_not_array()

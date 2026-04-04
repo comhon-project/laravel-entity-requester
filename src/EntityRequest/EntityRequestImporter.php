@@ -193,24 +193,22 @@ class EntityRequestImporter
             ? $this->importFilter($filter['filter'], $stack)
             : null;
 
-        if (isset($filter['entities'])) {
-            return new MorphCondition(
+        return ! empty($filter['entities'] ?? null)
+            ? new MorphCondition(
                 $filter['property'],
                 $operator,
                 $this->importEntities($filter['entities'], $stack),
                 $importedFilter,
                 $countOperator,
                 $count,
+            )
+            : new EntityCondition(
+                $filter['property'],
+                $operator,
+                $importedFilter,
+                $countOperator,
+                $count,
             );
-        }
-
-        return new EntityCondition(
-            $filter['property'],
-            $operator,
-            $importedFilter,
-            $countOperator,
-            $count,
-        );
     }
 
     private function importEntities(mixed $entities, array $stack): array
