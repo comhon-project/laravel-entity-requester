@@ -3,7 +3,7 @@
 namespace Tests\Feature\Feature;
 
 use Comhon\EntityRequester\DTOs\RequestSchema;
-use Comhon\EntityRequester\Factories\RequestSchemaFactory;
+use Comhon\EntityRequester\Factories\Schema\RequestSchemaFactory;
 use Comhon\EntityRequester\Interfaces\RequestSchemaFactoryInterface;
 use Illuminate\Cache\Repository;
 use Tests\TestCase;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Comhon\EntityRequester\Factories;
+namespace Comhon\EntityRequester\Factories\Schema;
 
 use Comhon\EntityRequester\DTOs\EnumSchema;
 use Comhon\EntityRequester\Facades\EntityRequester;

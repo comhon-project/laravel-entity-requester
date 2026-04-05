@@ -1,11 +1,11 @@
 <?php
 
-namespace Comhon\EntityRequester\EntityRequest;
+namespace Comhon\EntityRequester\Condition;
 
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 
-class ConditionOperatorManager implements ConditionOperatorManagerInterface
+class OperatorManager implements ConditionOperatorManagerInterface
 {
     private const OPERATORS_BY_PROPERTY_TYPE = [
         'object' => [ConditionOperator::HasKey, ConditionOperator::HasNotKey],

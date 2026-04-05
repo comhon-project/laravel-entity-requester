@@ -18,13 +18,13 @@ use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
-use Comhon\EntityRequester\Facades\QueryBuilder;
+use Comhon\EntityRequester\Facades\EloquentBuilderFactory;
 use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Illuminate\Database\Eloquent\Attributes\Scope as EloquentScope;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
-class QueryBuilderTest extends TestCase
+class EloquentBuilderFactoryTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -34,7 +34,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_request_only_class_name()
     {
-        $query = QueryBuilder::fromInputs([], User::class);
+        $query = EloquentBuilderFactory::fromInputs([], User::class);
 
         $rawSql = $this->getRawSqlAccordingDriver('select * from "users" order by "id" asc');
         $this->assertEquals($rawSql, $query->toRawSql());
@@ -42,7 +42,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_request_only_model()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
         ]);
 
@@ -52,7 +52,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_request_default_sort_by_model_key()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'post',
         ]);
 
@@ -63,7 +63,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_request_invalid_scope()
     {
         $this->expectException(\ArgumentCountError::class);
-        QueryBuilder::fromInputs([
+        EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'scope',
@@ -75,7 +75,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_request_invalid_scope_parameter()
     {
         $this->expectException(\TypeError::class);
-        QueryBuilder::fromInputs([
+        EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'scope',
@@ -93,7 +93,7 @@ class QueryBuilderTest extends TestCase
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Condition('email', $operator, 'gmail'));
 
-        $query = QueryBuilder::fromEntityRequest($entityRequest);
+        $query = EloquentBuilderFactory::fromEntityRequest($entityRequest);
 
         $sqlOperator = app(ConditionOperatorManagerInterface::class)->getSqlOperator($operator);
         $sql = 'select * from "users" where "users"."email"::text '.$sqlOperator.' ? order by "id" asc';
@@ -110,12 +110,12 @@ class QueryBuilderTest extends TestCase
 
         $this->expectException(NotSupportedOperatorException::class);
         $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains, has_key, has_not_key]");
-        QueryBuilder::fromEntityRequest($entityRequest);
+        EloquentBuilderFactory::fromEntityRequest($entityRequest);
     }
 
     public function test_build_entity_request_valid()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -210,7 +210,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_request_condition_operators(bool $and)
     {
         $operator = $and ? 'and' : 'or';
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -321,7 +321,7 @@ class QueryBuilderTest extends TestCase
             return;
         }
 
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -351,7 +351,7 @@ class QueryBuilderTest extends TestCase
     {
         Purchase::factory()->for(User::factory(), 'buyer')->create();
 
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
@@ -384,7 +384,7 @@ class QueryBuilderTest extends TestCase
     {
         Purchase::factory()->for(User::factory(), 'buyer')->create();
 
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
@@ -418,7 +418,7 @@ class QueryBuilderTest extends TestCase
     {
         Purchase::factory()->for(User::factory(), 'buyer')->create();
 
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
@@ -445,7 +445,7 @@ class QueryBuilderTest extends TestCase
     {
         Purchase::factory()->for(User::factory(), 'buyer')->create();
 
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
@@ -479,7 +479,7 @@ class QueryBuilderTest extends TestCase
     {
         Purchase::factory()->for(User::factory(), 'buyer')->create();
 
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'group',
@@ -526,7 +526,7 @@ class QueryBuilderTest extends TestCase
     {
         Purchase::factory()->for(User::factory(), 'buyer')->create();
 
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'group',
@@ -571,7 +571,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_one_or_many_sort_with_filter()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -616,7 +616,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_belongs_to_sort_simple()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'post',
             'sort' => [
                 [
@@ -639,7 +639,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_belongs_to_sort_complex()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'post',
             'sort' => [
                 [
@@ -666,7 +666,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_has_one_or_many_sort_simple()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -691,7 +691,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_has_one_or_many_sort_complex()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -716,7 +716,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_one_or_many_sort_simple()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -742,7 +742,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_one_or_many_sort_complex()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -772,7 +772,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_belongs_to_many_sort_simple()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -799,7 +799,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_belongs_to_many_sort_complex()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -830,7 +830,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_to_many_sort_simple()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'post',
             'sort' => [
                 [
@@ -858,7 +858,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morph_to_many_sort_complex()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'post',
             'sort' => [
                 [
@@ -885,7 +885,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morphed_by_many_sort_simple()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'tag',
             'sort' => [
                 [
@@ -920,7 +920,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_morphed_by_many_sort_complex()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'tag',
             'sort' => [
                 [
@@ -951,7 +951,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_has_many_through_sort_simple()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -985,7 +985,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_relationship_has_many_through_sort_complex()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -1017,7 +1017,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_morph_to_sort()
     {
         $this->expectExceptionMessage('MorphTo relations not managed for sorting');
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'purchase',
             'sort' => [
                 [
@@ -1030,7 +1030,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_relationship_missing_arragration()
     {
         $this->expectExceptionMessage('Invalid "to many" sort on property \'friends.id\', it must have aggregation function');
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -1042,7 +1042,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_sort_nested_relations_without_subquery()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -1079,7 +1079,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_request_contains_operators(bool $and)
     {
         $operator = $and ? 'and' : 'or';
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -1127,7 +1127,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_request_entity_condition_object_nested()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -1159,7 +1159,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_request_entity_condition_object_group(bool $and)
     {
         $operator = $and ? 'and' : 'or';
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -1202,7 +1202,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_request_entity_condition_object_one_level()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -1225,7 +1225,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_request_entity_condition_object_has_without_filter()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -1243,7 +1243,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_request_entity_condition_object_has_not_without_filter()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -1263,7 +1263,7 @@ class QueryBuilderTest extends TestCase
     {
         $this->expectException(InvalidEntityConditionException::class);
         $this->expectExceptionMessage("Operator 'has_not' with filter is not supported on object property 'metadata'");
-        QueryBuilder::fromInputs([
+        EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -1283,7 +1283,7 @@ class QueryBuilderTest extends TestCase
     {
         $this->expectException(InvalidEntityConditionException::class);
         $this->expectExceptionMessage("Options 'count_operator' and 'count' are not supported on object property 'metadata'");
-        QueryBuilder::fromInputs([
+        EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -1307,14 +1307,14 @@ class QueryBuilderTest extends TestCase
                 new Scope('foo'),
             )
         );
-        QueryBuilder::fromEntityRequest($entityRequest);
+        EloquentBuilderFactory::fromEntityRequest($entityRequest);
     }
 
     #[DataProvider('providerBoolean')]
     public function test_build_entity_request_has_key(bool $and)
     {
         $operator = $and ? 'and' : 'or';
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -1345,7 +1345,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_sort_object_json_column()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 ['property' => 'metadata.address.city'],
@@ -1370,7 +1370,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_sort_mixed_relation_and_object()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -1411,7 +1411,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_sort_mixed_relation_and_object_missing_aggregation()
     {
         $this->expectException(InvalidToManySortException::class);
-        QueryBuilder::fromInputs([
+        EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -1423,7 +1423,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_sort_nested_relations_with_subquery()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -1461,7 +1461,7 @@ class QueryBuilderTest extends TestCase
     public function test_build_entity_sort_multiple_to_many_with_unsafe_aggregation_throws()
     {
         $this->expectException(InvalidToManySortException::class);
-        QueryBuilder::fromInputs([
+        EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -1478,7 +1478,7 @@ class QueryBuilderTest extends TestCase
 
     public function test_build_entity_sort_multiple_to_many_with_safe_aggregation_works()
     {
-        $query = QueryBuilder::fromInputs([
+        $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
                 [
@@ -1500,7 +1500,7 @@ class QueryBuilderTest extends TestCase
     {
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('carbon', ['2026-03-26']));
-        $query = QueryBuilder::fromEntityRequest($entityRequest);
+        $query = EloquentBuilderFactory::fromEntityRequest($entityRequest);
 
         $rawSql = $query->toRawSql();
         $this->assertStringContainsString('2026-03-26', $rawSql);
@@ -1511,7 +1511,7 @@ class QueryBuilderTest extends TestCase
     {
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('dateTime', ['2026-03-26 10:00:00']));
-        $query = QueryBuilder::fromEntityRequest($entityRequest);
+        $query = EloquentBuilderFactory::fromEntityRequest($entityRequest);
 
         $rawSql = $query->toRawSql();
         $this->assertStringContainsString('2026-03-26', $rawSql);
@@ -1532,7 +1532,7 @@ class QueryBuilderTest extends TestCase
             new Condition('first_name', ConditionOperator::Equal, 'john'),
         ));
         $entityRequest->setFilter($group);
-        $query = QueryBuilder::fromEntityRequest($entityRequest);
+        $query = EloquentBuilderFactory::fromEntityRequest($entityRequest);
 
         $rawSql = $query->toRawSql();
         $this->assertStringContainsString('or ((', $rawSql);
@@ -1548,7 +1548,7 @@ class QueryBuilderTest extends TestCase
         $group->add(new Condition('email', ConditionOperator::Equal, 'john@example.com'));
         $group->add(new EntityCondition('metadata', EntityConditionOperator::Has));
         $entityRequest->setFilter($group);
-        $query = QueryBuilder::fromEntityRequest($entityRequest);
+        $query = EloquentBuilderFactory::fromEntityRequest($entityRequest);
 
         $rawSql = $query->toRawSql();
         $expected = $this->getRawSqlAccordingDriver('or "users"."metadata" is not null');
@@ -1560,7 +1560,7 @@ class QueryBuilderTest extends TestCase
     {
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('notUsable', ['test_value']));
-        $query = QueryBuilder::fromEntityRequest($entityRequest);
+        $query = EloquentBuilderFactory::fromEntityRequest($entityRequest);
 
         $rawSql = $query->toRawSql();
         $this->assertStringContainsString('test_value', $rawSql);
@@ -1574,7 +1574,7 @@ class QueryBuilderTest extends TestCase
         $group->add(new Condition('email', ConditionOperator::Equal, 'john@example.com'));
         $group->add(new EntityCondition('metadata', EntityConditionOperator::HasNot));
         $entityRequest->setFilter($group);
-        $query = QueryBuilder::fromEntityRequest($entityRequest);
+        $query = EloquentBuilderFactory::fromEntityRequest($entityRequest);
 
         $rawSql = $query->toRawSql();
         $expected = $this->getRawSqlAccordingDriver('or "users"."metadata" is null');

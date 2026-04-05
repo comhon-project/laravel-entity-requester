@@ -6,7 +6,7 @@ use App\Models\User;
 use Comhon\EntityRequester\DTOs\EntitySchema;
 use Comhon\EntityRequester\Exceptions\SchemaNotFoundException;
 use Comhon\EntityRequester\Facades\EntityRequester;
-use Comhon\EntityRequester\Factories\EntitySchemaFactory;
+use Comhon\EntityRequester\Factories\Schema\EntitySchemaFactory;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Illuminate\Cache\Repository;
 use Illuminate\Cache\TaggedCache;

@@ -14,11 +14,11 @@ use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
+use Comhon\EntityRequester\Interfaces\EntityRequestAuthorizerInterface;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
-use Comhon\EntityRequester\Interfaces\RequestGateInterface;
 use Comhon\EntityRequester\Interfaces\RequestSchemaFactoryInterface;
 
-class Gate implements RequestGateInterface
+class Authorizer implements EntityRequestAuthorizerInterface
 {
     public function __construct(
         private RequestSchemaFactoryInterface $requestSchemaFactory,

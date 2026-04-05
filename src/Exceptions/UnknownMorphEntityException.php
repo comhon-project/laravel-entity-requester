@@ -2,7 +2,7 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class UnknownMorphEntityException extends \Exception
+class UnknownMorphEntityException extends RenderableException
 {
     public function __construct(string $entityName)
     {

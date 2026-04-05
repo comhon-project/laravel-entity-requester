@@ -1,6 +1,6 @@
 <?php
 
-namespace Comhon\EntityRequester\EntityRequest;
+namespace Comhon\EntityRequester\Factories;
 
 use Carbon\Carbon;
 use Comhon\EntityRequester\Database\RelationJoiner;
@@ -12,6 +12,7 @@ use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\DTOs\Group;
 use Comhon\EntityRequester\DTOs\MorphCondition;
 use Comhon\EntityRequester\DTOs\Scope;
+use Comhon\EntityRequester\EntityRequest\Importer;
 use Comhon\EntityRequester\Enums\AggregationFunction;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
@@ -39,12 +40,12 @@ use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 use ReflectionMethod;
 
-class QueryBuilder
+class EloquentBuilderFactory
 {
     public function __construct(
         private ConditionOperatorManagerInterface $operatorManager,
         private ModelResolverInterface $modelResolver,
-        private EntityRequestImporter $importer,
+        private Importer $importer,
     ) {}
 
     /**

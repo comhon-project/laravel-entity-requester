@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static Builder fromInputs(array $inputs, ?string $modelClass = null)
  * @method static Builder fromEntityRequest(EntityRequest $entityRequest)
  *
- * @see \Comhon\EntityRequester\EntityRequest\QueryBuilder
+ * @see \Comhon\EntityRequester\Factories\EloquentBuilderFactory
  */
-class QueryBuilder extends Facade
+class EloquentBuilderFactory extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \Comhon\EntityRequester\EntityRequest\QueryBuilder::class;
+        return \Comhon\EntityRequester\Factories\EloquentBuilderFactory::class;
     }
 }

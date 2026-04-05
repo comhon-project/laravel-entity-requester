@@ -26,7 +26,7 @@ use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Comhon\EntityRequester\Interfaces\EnumSchemaFactoryInterface;
 
-class SchemaConsistencyValidator
+class ConsistencyChecker
 {
     private const TO_ONE_RELATIONSHIPS = [
         'belongs_to' => true,

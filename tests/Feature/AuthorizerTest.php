@@ -7,23 +7,23 @@ use App\Models\Purchase;
 use Comhon\EntityRequester\DTOs\Condition;
 use Comhon\EntityRequester\DTOs\EntityCondition;
 use Comhon\EntityRequester\DTOs\EntityRequest;
-use Comhon\EntityRequester\EntityRequest\EntityRequestImporter;
+use Comhon\EntityRequester\EntityRequest\Importer;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
 use Comhon\EntityRequester\Exceptions\NotFiltrableException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\NotSortableException;
-use Comhon\EntityRequester\Facades\Gate;
+use Comhon\EntityRequester\Interfaces\EntityRequestAuthorizerInterface;
 use Tests\TestCase;
 
-class RequestGateTest extends TestCase
+class AuthorizerTest extends TestCase
 {
     public function test_authorize_not_filtrable()
     {
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'condition',
@@ -37,7 +37,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -51,7 +51,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 ['property' => 'foo'],
@@ -63,7 +63,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotScopableException::class);
         $this->expectExceptionMessage("scope 'foobar' is not valid");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'scope',
@@ -76,7 +76,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'password' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 [
@@ -90,7 +90,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 [
@@ -104,7 +104,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 [
@@ -118,7 +118,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'id' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 [
@@ -131,7 +131,7 @@ class RequestGateTest extends TestCase
 
     public function test_authorize_valid()
     {
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'group',
@@ -203,7 +203,7 @@ class RequestGateTest extends TestCase
 
     public function test_authorize_entity_condition_object_nested()
     {
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -228,7 +228,7 @@ class RequestGateTest extends TestCase
 
     public function test_authorize_entity_condition_object_has_without_filter()
     {
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -242,7 +242,7 @@ class RequestGateTest extends TestCase
 
     public function test_authorize_entity_condition_object_has_not_without_filter()
     {
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -258,7 +258,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -278,7 +278,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'secret' is not filtrable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -298,7 +298,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'foo' is not filtrable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -321,7 +321,7 @@ class RequestGateTest extends TestCase
 
     public function test_authorize_object_sort_dot_notation()
     {
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 ['property' => 'metadata.address.city'],
@@ -335,7 +335,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'password' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 ['property' => 'password.something'],
@@ -345,7 +345,7 @@ class RequestGateTest extends TestCase
 
     public function test_authorize_mixed_relation_object_sort()
     {
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 [
@@ -363,7 +363,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 ['property' => 'metadata.foo'],
@@ -375,7 +375,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'secret' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 ['property' => 'metadata.secret'],
@@ -387,7 +387,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 ['property' => 'metadata.address.foo'],
@@ -399,7 +399,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'password' is not filtrable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -413,7 +413,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotFiltrableException::class);
         $this->expectExceptionMessage("Property 'unknown' is not filtrable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -433,7 +433,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(InvalidEntityConditionException::class);
         $this->expectExceptionMessage("Property 'email' does not support entity condition filtering");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [
                 'type' => 'entity_condition',
@@ -453,7 +453,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'something' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 ['property' => 'metadata.label.something'],
@@ -465,7 +465,7 @@ class RequestGateTest extends TestCase
     {
         $this->expectException(NotSortableException::class);
         $this->expectExceptionMessage("Property 'foo' is not sortable");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'sort' => [
                 [
@@ -479,7 +479,7 @@ class RequestGateTest extends TestCase
 
     public function test_authorize_morph_condition()
     {
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
@@ -499,7 +499,7 @@ class RequestGateTest extends TestCase
 
     public function test_authorize_morph_condition_without_filter()
     {
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',
@@ -524,14 +524,14 @@ class RequestGateTest extends TestCase
                 new Condition('email', ConditionOperator::Equal, 'john@example.com'),
             )
         );
-        Gate::authorize($entityRequest);
+        app(EntityRequestAuthorizerInterface::class)->authorize($entityRequest);
     }
 
     public function test_authorize_morph_condition_invalid_entity()
     {
         $this->expectException(InvalidEntityConditionException::class);
         $this->expectExceptionMessage("Entity 'post' is not allowed for morph property 'buyer'");
-        Gate::authorize(app(EntityRequestImporter::class)->import([
+        app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'purchase',
             'filter' => [
                 'type' => 'entity_condition',

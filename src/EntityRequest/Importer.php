@@ -23,7 +23,7 @@ use Comhon\EntityRequester\Exceptions\MissingValueException;
 use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 
-class EntityRequestImporter
+class Importer
 {
     public function __construct(
         private ModelResolverInterface $modelResolver,

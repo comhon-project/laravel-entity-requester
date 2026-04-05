@@ -2,7 +2,7 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class MorphEntitiesRequiredException extends \Exception
+class MorphEntitiesRequiredException extends RenderableException
 {
     public function __construct(string $propertyId)
     {

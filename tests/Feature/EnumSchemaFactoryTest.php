@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Feature;
 
-use Comhon\EntityRequester\Factories\EnumSchemaFactory;
+use Comhon\EntityRequester\Factories\Schema\EnumSchemaFactory;
 use Comhon\EntityRequester\Interfaces\EnumSchemaFactoryInterface;
 use Illuminate\Cache\Repository;
 use Tests\TestCase;

@@ -3,15 +3,15 @@
 namespace Comhon\EntityRequester;
 
 use Comhon\EntityRequester\Commands\MakeModelSchema;
-use Comhon\EntityRequester\EntityRequest\ConditionOperatorManager;
-use Comhon\EntityRequester\EntityRequest\Gate;
-use Comhon\EntityRequester\Factories\EntitySchemaFactory;
-use Comhon\EntityRequester\Factories\EnumSchemaFactory;
-use Comhon\EntityRequester\Factories\RequestSchemaFactory;
+use Comhon\EntityRequester\Condition\OperatorManager;
+use Comhon\EntityRequester\EntityRequest\Authorizer;
+use Comhon\EntityRequester\Factories\Schema\EntitySchemaFactory;
+use Comhon\EntityRequester\Factories\Schema\EnumSchemaFactory;
+use Comhon\EntityRequester\Factories\Schema\RequestSchemaFactory;
 use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
+use Comhon\EntityRequester\Interfaces\EntityRequestAuthorizerInterface;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Comhon\EntityRequester\Interfaces\EnumSchemaFactoryInterface;
-use Comhon\EntityRequester\Interfaces\RequestGateInterface;
 use Comhon\EntityRequester\Interfaces\RequestSchemaFactoryInterface;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -33,10 +33,10 @@ class EntityRequesterServiceProvider extends PackageServiceProvider
 
     public function packageRegistered()
     {
-        $this->app->singletonIf(ConditionOperatorManagerInterface::class, ConditionOperatorManager::class);
+        $this->app->singletonIf(ConditionOperatorManagerInterface::class, OperatorManager::class);
         $this->app->singletonIf(EntitySchemaFactoryInterface::class, EntitySchemaFactory::class);
         $this->app->singletonIf(RequestSchemaFactoryInterface::class, RequestSchemaFactory::class);
         $this->app->singletonIf(EnumSchemaFactoryInterface::class, EnumSchemaFactory::class);
-        $this->app->singletonIf(RequestGateInterface::class, Gate::class);
+        $this->app->singletonIf(EntityRequestAuthorizerInterface::class, Authorizer::class);
     }
 }

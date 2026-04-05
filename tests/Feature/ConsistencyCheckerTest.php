@@ -11,7 +11,7 @@ use Comhon\EntityRequester\DTOs\EntityRequest;
 use Comhon\EntityRequester\DTOs\Group;
 use Comhon\EntityRequester\DTOs\MorphCondition;
 use Comhon\EntityRequester\DTOs\Scope;
-use Comhon\EntityRequester\EntityRequest\SchemaConsistencyValidator;
+use Comhon\EntityRequester\EntityRequest\ConsistencyChecker;
 use Comhon\EntityRequester\Enums\AggregationFunction;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
@@ -29,18 +29,18 @@ use Comhon\EntityRequester\Exceptions\PropertyNotFoundException;
 use Comhon\EntityRequester\Exceptions\UnknownMorphEntityException;
 use Tests\TestCase;
 
-class SchemaConsistencyValidatorTest extends TestCase
+class ConsistencyCheckerTest extends TestCase
 {
-    private function validator(): SchemaConsistencyValidator
+    private function checker(): ConsistencyChecker
     {
-        return app(SchemaConsistencyValidator::class);
+        return app(ConsistencyChecker::class);
     }
 
     public function test_valid_condition()
     {
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Condition('email', ConditionOperator::Equal, 'john@example.com'));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
         $this->assertTrue(true);
     }
 
@@ -48,7 +48,7 @@ class SchemaConsistencyValidatorTest extends TestCase
     {
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('foo', ['bar', 123.321, Fruit::Apple->value]));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
         $this->assertTrue(true);
     }
 
@@ -56,7 +56,7 @@ class SchemaConsistencyValidatorTest extends TestCase
     {
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('validated'));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
         $this->assertTrue(true);
     }
 
@@ -69,7 +69,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             ['user'],
             new Condition('email', ConditionOperator::Equal, 'john@example.com'),
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
         $this->assertTrue(true);
     }
 
@@ -81,7 +81,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             EntityConditionOperator::Has,
             new Condition('name', ConditionOperator::Equal, 'test'),
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
         $this->assertTrue(true);
     }
 
@@ -92,7 +92,7 @@ class SchemaConsistencyValidatorTest extends TestCase
         $group->add(new Condition('email', ConditionOperator::Equal, 'john@example.com'));
         $group->add(new Scope('validated'));
         $entityRequest->setFilter($group);
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
         $this->assertTrue(true);
     }
 
@@ -103,7 +103,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Condition('favorite_fruits', ConditionOperator::Equal, 'apple'));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_contains_on_non_array_property_throws()
@@ -113,7 +113,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Condition('name', ConditionOperator::Contains, 'john'));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_object_type_invalid_operator()
@@ -123,14 +123,14 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Condition('metadata', ConditionOperator::Equal, 'test'));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_entity_condition_on_morph_to_without_filter()
     {
         $entityRequest = new EntityRequest(Purchase::class);
         $entityRequest->setFilter(new EntityCondition('buyer', EntityConditionOperator::Has));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
         $this->assertTrue(true);
     }
 
@@ -144,7 +144,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             EntityConditionOperator::Has,
             new Condition('email', ConditionOperator::Equal, 'john@example.com'),
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_unknown_morph_entity_throws()
@@ -158,7 +158,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             EntityConditionOperator::Has,
             ['nonexistent'],
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_unknown_scope_throws()
@@ -167,7 +167,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('nonexistent'));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_scope_invalid_parameter_type_throws()
@@ -176,7 +176,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('age', ['not_an_int']));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_scope_invalid_enum_value_throws()
@@ -185,14 +185,14 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('foo', ['bar', 123.321, 'invalid_fruit']));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_scope_nullable_parameter_accepts_null()
     {
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('carbon', [null]));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
         $this->assertTrue(true);
     }
 
@@ -202,7 +202,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('dateTime', [null]));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_scope_inside_object_throws()
@@ -216,7 +216,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             EntityConditionOperator::Has,
             new Scope('validated'),
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_morph_inside_object_throws()
@@ -230,7 +230,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             EntityConditionOperator::Has,
             new MorphCondition('buyer', EntityConditionOperator::Has, ['user']),
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_entity_condition_on_scalar_property_throws()
@@ -240,7 +240,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new EntityCondition('email', EntityConditionOperator::Has));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_entity_condition_has_not_with_filter_on_object_throws()
@@ -254,7 +254,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             EntityConditionOperator::HasNot,
             new Condition('label', ConditionOperator::Equal, 'test'),
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_entity_condition_count_on_object_throws()
@@ -270,7 +270,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             MathOperator::GreaterThanOrEqual,
             2,
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_morph_condition_on_non_morph_to_throws()
@@ -284,7 +284,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             EntityConditionOperator::Has,
             ['post'],
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_condition_unknown_property_throws()
@@ -293,7 +293,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Condition('nonexistent', ConditionOperator::Equal, 'test'));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_entity_condition_unknown_property_throws()
@@ -302,7 +302,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new EntityCondition('nonexistent', EntityConditionOperator::Has));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_scope_too_many_parameters_throws()
@@ -311,7 +311,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('validated', ['extra']));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_sort_unknown_property_throws()
@@ -320,7 +320,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->addSort('nonexistent');
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_sort_non_traversable_property_throws()
@@ -329,7 +329,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->addSort('email.something');
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_sort_to_many_without_aggregation_throws()
@@ -338,7 +338,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->addSort('posts.name');
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_sort_through_morph_to_throws()
@@ -348,7 +348,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(Purchase::class);
         $entityRequest->addSort('buyer.email');
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_sort_unknown_intermediate_property_throws()
@@ -357,7 +357,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->addSort('posts.unknown.foo', OrderDirection::Asc, null, AggregationFunction::Min);
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_sort_with_valid_filter()
@@ -369,7 +369,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             new Condition('name', ConditionOperator::Equal, 'test'),
             AggregationFunction::Min,
         );
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
         $this->assertTrue(true);
     }
 
@@ -383,7 +383,7 @@ class SchemaConsistencyValidatorTest extends TestCase
             EntityConditionOperator::Has,
             ['user'],
         ));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_scope_missing_parameter_throws()
@@ -392,7 +392,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('foo', ['bar']));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_scope_boolean_parameter_wrong_type_throws()
@@ -401,7 +401,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('bool', ['not_a_bool']));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_scope_datetime_parameter_wrong_type_throws()
@@ -410,7 +410,7 @@ class SchemaConsistencyValidatorTest extends TestCase
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Scope('dateTime', [123]));
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 
     public function test_multiple_to_many_unsafe_aggregation_throws()
@@ -420,6 +420,6 @@ class SchemaConsistencyValidatorTest extends TestCase
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->addSort('posts.name', OrderDirection::Asc, null, AggregationFunction::Count);
         $entityRequest->addSort('friends.email', OrderDirection::Asc, null, AggregationFunction::Sum);
-        $this->validator()->validate($entityRequest);
+        $this->checker()->validate($entityRequest);
     }
 }
