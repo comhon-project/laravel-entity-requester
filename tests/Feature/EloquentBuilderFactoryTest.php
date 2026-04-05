@@ -1458,6 +1458,37 @@ class EloquentBuilderFactoryTest extends TestCase
         $query->get();
     }
 
+    public function test_build_entity_sort_with_scope_nested_in_group()
+    {
+        $query = EloquentBuilderFactory::fromInputs([
+            'entity' => 'user',
+            'sort' => [
+                [
+                    'property' => 'friends.publicPosts.tags.id',
+                    'aggregation' => 'count',
+                    'filter' => [
+                        'type' => 'group',
+                        'operator' => 'and',
+                        'filters' => [
+                            [
+                                'type' => 'scope',
+                                'name' => 'validated',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // The scope inside the group must trigger a subquery join (joinSub),
+        // so the SQL should contain a subquery alias like "alias_sub_tags_"
+        $rawSql = $query->toRawSql();
+        $this->assertStringContainsString('alias_sub_tags_', $rawSql);
+
+        // just verify that query works and doesn't throw exception
+        $query->get();
+    }
+
     public function test_build_entity_sort_multiple_to_many_with_unsafe_aggregation_throws()
     {
         $this->expectException(InvalidToManySortException::class);

@@ -548,7 +548,7 @@ class EloquentBuilderFactory
                     return true;
                 }
                 if ($element instanceof Group) {
-                    array_push($stack, $element->getConditions());
+                    array_push($stack, ...$element->getConditions());
                 }
             }
         }
