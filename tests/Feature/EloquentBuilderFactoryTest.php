@@ -17,9 +17,7 @@ use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
-use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
 use Comhon\EntityRequester\Facades\EloquentBuilderFactory;
-use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Illuminate\Database\Eloquent\Attributes\Scope as EloquentScope;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -95,22 +93,9 @@ class EloquentBuilderFactoryTest extends TestCase
 
         $query = EloquentBuilderFactory::fromEntityRequest($entityRequest);
 
-        $sqlOperator = app(ConditionOperatorManagerInterface::class)->getSqlOperator($operator);
+        $sqlOperator = $not ? 'not ilike' : 'ilike';
         $sql = 'select * from "users" where "users"."email"::text '.$sqlOperator.' ? order by "id" asc';
         $this->assertEquals($sql, $query->toSql());
-    }
-
-    #[DataProvider('providerBoolean')]
-    public function test_build_entity_request_ilike_not_supported(bool $not)
-    {
-        config(['database.default' => 'mysql']);
-        $operator = $not ? ConditionOperator::NotIlike : ConditionOperator::Ilike;
-        $entityRequest = new EntityRequest(User::class);
-        $entityRequest->setFilter(new Condition('email', $operator, 'gmail'));
-
-        $this->expectException(NotSupportedOperatorException::class);
-        $this->expectExceptionMessage("Not supported condition operator '{$operator->value}', must be one of [=, <>, <, <=, >, >=, in, not_in, like, not_like, contains, not_contains, has_key, has_not_key]");
-        EloquentBuilderFactory::fromEntityRequest($entityRequest);
     }
 
     public function test_build_entity_request_valid()

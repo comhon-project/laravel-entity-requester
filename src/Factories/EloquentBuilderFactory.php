@@ -19,9 +19,7 @@ use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
 use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
-use Comhon\EntityRequester\Exceptions\NotSupportedOperatorException;
 use Comhon\EntityRequester\Exceptions\UnknownMorphEntityException;
-use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use DateTime;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,7 +41,6 @@ use ReflectionMethod;
 class EloquentBuilderFactory
 {
     public function __construct(
-        private ConditionOperatorManagerInterface $operatorManager,
         private ModelResolverInterface $modelResolver,
         private Importer $importer,
     ) {}
@@ -123,43 +120,19 @@ class EloquentBuilderFactory
         $column = $jsonPathPrefix
             ? "$table.{$jsonPathPrefix}->{$propertyId}"
             : "$table.{$propertyId}";
-        if (! $this->operatorManager->isSupported($operator)) {
-            throw new NotSupportedOperatorException($operator);
-        }
+        $connector = $and ? 'and' : 'or';
 
-        if ($and) {
-            if ($operator === ConditionOperator::In) {
-                $query->whereIn($column, $value);
-            } elseif ($operator === ConditionOperator::NotIn) {
-                $query->whereNotIn($column, $value);
-            } elseif ($operator === ConditionOperator::Contains) {
-                $query->whereJsonContains($column, $value);
-            } elseif ($operator === ConditionOperator::NotContains) {
-                $query->whereJsonDoesntContain($column, $value);
-            } elseif ($operator === ConditionOperator::HasKey) {
-                $query->whereJsonContainsKey($column.'->'.$value);
-            } elseif ($operator === ConditionOperator::HasNotKey) {
-                $query->whereJsonDoesntContainKey($column.'->'.$value);
-            } else {
-                $query->where($column, $this->operatorManager->getSqlOperator($operator), $value);
-            }
-        } else {
-            if ($operator === ConditionOperator::In) {
-                $query->orWhereIn($column, $value);
-            } elseif ($operator === ConditionOperator::NotIn) {
-                $query->orWhereNotIn($column, $value);
-            } elseif ($operator === ConditionOperator::Contains) {
-                $query->orWhereJsonContains($column, $value);
-            } elseif ($operator === ConditionOperator::NotContains) {
-                $query->orWhereJsonDoesntContain($column, $value);
-            } elseif ($operator === ConditionOperator::HasKey) {
-                $query->orWhereJsonContainsKey($column.'->'.$value);
-            } elseif ($operator === ConditionOperator::HasNotKey) {
-                $query->orWhereJsonDoesntContainKey($column.'->'.$value);
-            } else {
-                $query->orWhere($column, $this->operatorManager->getSqlOperator($operator), $value);
-            }
-        }
+        match ($operator) {
+            ConditionOperator::In => $query->whereIn($column, $value, $connector),
+            ConditionOperator::NotIn => $query->whereNotIn($column, $value, $connector),
+            ConditionOperator::Contains => $query->whereJsonContains($column, $value, $connector),
+            ConditionOperator::NotContains => $query->whereJsonDoesntContain($column, $value, $connector),
+            ConditionOperator::HasKey => $query->whereJsonContainsKey($column.'->'.$value, $connector),
+            ConditionOperator::HasNotKey => $query->whereJsonDoesntContainKey($column.'->'.$value, $connector),
+            ConditionOperator::NotLike => $query->where($column, 'not like', $value, $connector),
+            ConditionOperator::NotIlike => $query->where($column, 'not ilike', $value, $connector),
+            default => $query->where($column, $operator->value, $value, $connector),
+        };
     }
 
     /**

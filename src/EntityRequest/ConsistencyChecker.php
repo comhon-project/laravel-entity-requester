@@ -11,6 +11,7 @@ use Comhon\EntityRequester\DTOs\Group;
 use Comhon\EntityRequester\DTOs\MorphCondition;
 use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Enums\AggregationFunction;
+use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
 use Comhon\EntityRequester\Exceptions\InvalidOperatorForPropertyTypeException;
@@ -22,7 +23,6 @@ use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\PropertyNotFoundException;
 use Comhon\EntityRequester\Exceptions\SchemaNotFoundException;
 use Comhon\EntityRequester\Exceptions\UnknownMorphEntityException;
-use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
 use Comhon\EntityRequester\Interfaces\EnumSchemaFactoryInterface;
 
@@ -35,10 +35,22 @@ class ConsistencyChecker
         'morph_one' => true,
     ];
 
+    private const OPERATORS_BY_PROPERTY_TYPE = [
+        'object' => [ConditionOperator::HasKey, ConditionOperator::HasNotKey],
+        'array' => [ConditionOperator::Contains, ConditionOperator::NotContains],
+        'default' => [
+            ConditionOperator::Equal, ConditionOperator::NotEqual,
+            ConditionOperator::LessThan, ConditionOperator::LessThanOrEqual,
+            ConditionOperator::GreaterThan, ConditionOperator::GreaterThanOrEqual,
+            ConditionOperator::In, ConditionOperator::NotIn,
+            ConditionOperator::Like, ConditionOperator::NotLike,
+            ConditionOperator::Ilike, ConditionOperator::NotIlike,
+        ],
+    ];
+
     public function __construct(
         private EntitySchemaFactoryInterface $entitySchemaFactory,
         private EnumSchemaFactoryInterface $enumSchemaFactory,
-        private ConditionOperatorManagerInterface $operatorManager,
     ) {}
 
     public function validate(EntityRequest $entityRequest): void
@@ -77,7 +89,7 @@ class ConsistencyChecker
         $propertyType = $property['type'];
         $operator = $condition->getOperator();
 
-        $allowedOperators = $this->operatorManager->getOperatorsForPropertyType($propertyType);
+        $allowedOperators = self::OPERATORS_BY_PROPERTY_TYPE[$propertyType] ?? self::OPERATORS_BY_PROPERTY_TYPE['default'];
         if (! in_array($operator, $allowedOperators)) {
             throw new InvalidOperatorForPropertyTypeException($operator, $propertyType, $allowedOperators);
         }

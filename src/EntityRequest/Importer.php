@@ -20,15 +20,30 @@ use Comhon\EntityRequester\Exceptions\EnumValueException;
 use Comhon\EntityRequester\Exceptions\InvalidConditionOperatorException;
 use Comhon\EntityRequester\Exceptions\MalformedValueException;
 use Comhon\EntityRequester\Exceptions\MissingValueException;
-use Comhon\EntityRequester\Interfaces\ConditionOperatorManagerInterface;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 
 class Importer
 {
     public function __construct(
         private ModelResolverInterface $modelResolver,
-        private ConditionOperatorManagerInterface $operatorManager,
     ) {}
+
+    private function isOperatorSupported(ConditionOperator $operator): bool
+    {
+        if ($operator === ConditionOperator::Ilike || $operator === ConditionOperator::NotIlike) {
+            $connectionName = config('database.default');
+            $driver = config("database.connections.{$connectionName}.driver");
+
+            return $driver === 'pgsql';
+        }
+
+        return true;
+    }
+
+    private function getSupportedOperators(): array
+    {
+        return array_filter(ConditionOperator::cases(), fn ($op) => $this->isOperatorSupported($op));
+    }
 
     public function import(array $data, ?string $modelClass = null): EntityRequest
     {
@@ -92,11 +107,11 @@ class Importer
         $operator = ConditionOperator::Equal;
         if (isset($filter['operator'])) {
             if (! is_string($filter['operator'])) {
-                throw new InvalidConditionOperatorException($this->getStack('operator', $stack));
+                throw new InvalidConditionOperatorException($this->getStack('operator', $stack), $this->getSupportedOperators());
             }
             $operator = ConditionOperator::tryFrom(strtolower($filter['operator']));
-            if (! $operator || ! $this->operatorManager->isSupported($operator)) {
-                throw new InvalidConditionOperatorException($this->getStack('operator', $stack));
+            if (! $operator || ! $this->isOperatorSupported($operator)) {
+                throw new InvalidConditionOperatorException($this->getStack('operator', $stack), $this->getSupportedOperators());
             }
         }
         if (! array_key_exists('value', $filter)) {
