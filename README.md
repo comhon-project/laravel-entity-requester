@@ -1,4 +1,4 @@
-# laravel library that permits to handle complex requests to retrieve entities through a REST API
+# Laravel Entity Requester
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/comhon-project/laravel-entity-requester.svg?style=flat-square)](https://packagist.org/packages/comhon-project/laravel-entity-requester)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/comhon-project/laravel-entity-requester/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/comhon-project/laravel-entity-requester/actions?query=workflow%3Arun-tests+branch%3Amain)
@@ -6,79 +6,51 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/comhon-project/laravel-entity-requester/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/comhon-project/laravel-entity-requester/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/comhon-project/laravel-entity-requester.svg?style=flat-square)](https://packagist.org/packages/comhon-project/laravel-entity-requester)
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+A Laravel package that converts complex REST API filter/sort requests into Eloquent queries, with schema-based validation and authorization.
 
-## Support us
+## Features
 
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/laravel-entity-requester.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/laravel-entity-requester)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+- **Schema-driven**: define entity structures and access control via JSON schemas
+- **Complex filtering**: conditions, groups (AND/OR), relationship existence, morph relations, scopes
+- **Sorting**: multi-column, through relationships, with aggregation functions
+- **Validation & authorization**: requests are checked against entity and request schemas
+- **Schema generation**: auto-generate schemas from Eloquent models
+- **i18n**: validation messages translated in 10 languages
 
 ## Installation
-
-You can install the package via composer:
 
 ```bash
 composer require comhon-project/laravel-entity-requester
 ```
 
-You can publish and run the migrations with:
-
 ```bash
-php artisan vendor:publish --tag="laravel-entity-requester-migrations"
-php artisan migrate
+php artisan vendor:publish --tag="entity-requester-config"
 ```
 
-You can publish the config file with:
+## Quick start
+
+Generate schemas from your model:
 
 ```bash
-php artisan vendor:publish --tag="laravel-entity-requester-config"
+php artisan entity-requester:make-model-schema App\\Models\\User --filtrable=all --sortable=attributes
 ```
 
-This is the contents of the published config file:
+Build a query from a request:
 
 ```php
-return [
-];
-```
+use Comhon\EntityRequester\Facades\EntityRequestValidator;
+use Comhon\EntityRequester\Facades\EloquentBuilderFactory;
 
-Optionally, you can publish the views using
+$entityRequest = EntityRequestValidator::validate($request->all());
+$results = EloquentBuilderFactory::fromEntityRequest($entityRequest)->get();
 
-```bash
-php artisan vendor:publish --tag="laravel-entity-requester-views"
-```
-
-## Usage
-
-```php
-$entityRequester = new Comhon\EntityRequester();
-echo $entityRequester->echoPhrase('Hello, Comhon!');
-```
-
-## Testing
-
-```bash
-composer test
+// Or directly from inputs (skips authorization, use only with trusted sources)
+$results = EloquentBuilderFactory::fromInputs($request->all())->get();
 ```
 
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
-## Contributing
-
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
-
-## Security Vulnerabilities
-
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
-
-## Credits
-
--   [jean-philippe](https://github.com/jean-philippe)
--   [All Contributors](../../contributors)
 
 ## License
 
