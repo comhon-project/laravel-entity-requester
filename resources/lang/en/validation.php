@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'property_not_found_in_schema' => "Property ':property' not found in schema ':schema'",
+    'property_not_filtrable' => "Property ':property' is not filtrable",
+    'property_not_sortable' => "Property ':property' is not sortable",
+    'property_not_traversable' => "Property ':property' is not traversable",
+    'property_required' => "Property ':property' is required",
+    'property_invalid_type' => "Property ':property' must be of type :type",
+    'property_invalid_enum' => "Property ':property' must be one of [:values]",
+    'property_invalid_operator' => "Property ':property' must use one of [:values] operators",
+    'operator_not_valid_for_type' => "Operator ':operator' is not valid for ':type' property type, must be one of [:values]",
+    'to_many_sort_requires_aggregation' => "Sort on \"to many\" property ':property' must have an aggregation function",
+    'multiple_unsafe_aggregation_sort' => "Sort on \"to many\" property ':property' is not allowed: only one sort with a non-deterministic aggregation (count, sum, avg) is permitted",
+    'schema_not_found' => ":name ':id' not found",
+    'scope_not_valid' => "Scope ':scope' is not valid",
+    'scope_invalid_parameters' => "Scope ':scope' has invalid parameters",
+    'entity_not_valid' => "Entity ':entity' is not a valid entity name",
+    'morph_requires_entities' => "Property ':property' is a morph_to relation and requires explicit entities",
+    'property_no_entity_condition_filtering' => "Property ':property' does not support entity condition filtering",
+    'entity_not_allowed_for_morph' => "Entity ':entity' is not allowed for morph property ':property'",
+    'has_not_filter_not_supported_on_object' => "Operator 'has_not' with filter is not supported on non-relationship property ':property'",
+    'count_options_not_supported_on_object' => "Options 'count_operator' and 'count' are not supported on non-relationship property ':property'",
+    'morph_condition_not_supported_in_object' => 'MorphCondition is not supported inside non-relationship entity conditions',
+    'property_not_morph_to' => "Property ':property' is not a morph_to relationship",
+    'scope_not_supported_in_object' => 'Scopes are not supported inside non-relationship entity conditions',
+];

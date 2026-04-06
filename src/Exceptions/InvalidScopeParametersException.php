@@ -2,13 +2,10 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class InvalidScopeParametersException extends RenderableException
+class InvalidScopeParametersException extends InvalidEntityRequestException
 {
-    /**
-     * @param  string  $propertyName
-     */
     public function __construct(string $scopeName)
     {
-        parent::__construct("invalid '$scopeName' scope parameters");
+        parent::__construct('scope_invalid_parameters', ['scope' => $scopeName]);
     }
 }

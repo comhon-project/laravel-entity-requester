@@ -2,13 +2,10 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class NotScopableException extends RenderableException
+class NotScopableException extends InvalidEntityRequestException
 {
-    /**
-     * @param  string  $propertyName
-     */
     public function __construct(string $scopeName)
     {
-        parent::__construct("scope '$scopeName' is not valid");
+        parent::__construct('scope_not_valid', ['scope' => $scopeName]);
     }
 }

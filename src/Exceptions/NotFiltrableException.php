@@ -2,10 +2,10 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class NotFiltrableException extends RenderableException
+class NotFiltrableException extends InvalidEntityRequestException
 {
     public function __construct(string $propertyName)
     {
-        parent::__construct("Property '$propertyName' is not filtrable");
+        parent::__construct('property_not_filtrable', ['property' => $propertyName]);
     }
 }

@@ -4,12 +4,16 @@ namespace Comhon\EntityRequester\Exceptions;
 
 use Comhon\EntityRequester\Enums\ConditionOperator;
 
-class InvalidOperatorForPropertyTypeException extends RenderableException
+class InvalidOperatorForPropertyTypeException extends InvalidEntityRequestException
 {
     public function __construct(ConditionOperator $operator, string $propertyType, array $allowedOperators)
     {
-        $values = array_map(fn ($op) => $op->value, $allowedOperators);
+        $values = implode(', ', array_map(fn ($op) => $op->value, $allowedOperators));
 
-        parent::__construct("Condition operator '{$operator->value}' is not valid for '{$propertyType}' property type, must be one of [".implode(', ', $values).']');
+        parent::__construct('operator_not_valid_for_type', [
+            'operator' => $operator->value,
+            'type' => $propertyType,
+            'values' => $values,
+        ]);
     }
 }

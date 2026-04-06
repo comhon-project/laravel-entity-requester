@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'property_not_found_in_schema' => "属性 ':property' 在模式 ':schema' 中未找到",
+    'property_not_filtrable' => "属性 ':property' 不可筛选",
+    'property_not_sortable' => "属性 ':property' 不可排序",
+    'property_not_traversable' => "属性 ':property' 不可遍历",
+    'property_required' => "属性 ':property' 是必填的",
+    'property_invalid_type' => "属性 ':property' 必须是 :type 类型",
+    'property_invalid_enum' => "属性 ':property' 必须是以下之一：[:values]",
+    'property_invalid_operator' => "属性 ':property' 必须使用以下运算符之一：[:values]",
+    'operator_not_valid_for_type' => "运算符 ':operator' 不适用于 ':type' 属性类型，必须是以下之一：[:values]",
+    'to_many_sort_requires_aggregation' => "对 \"to many\" 属性 ':property' 的排序必须使用聚合函数",
+    'multiple_unsafe_aggregation_sort' => "不允许对 \"to many\" 属性 ':property' 进行排序：仅允许一个使用非确定性聚合（count、sum、avg）的排序",
+    'schema_not_found' => ":name ':id' 未找到",
+    'scope_not_valid' => "作用域 ':scope' 无效",
+    'scope_invalid_parameters' => "作用域 ':scope' 的参数无效",
+    'entity_not_valid' => "实体 ':entity' 不是有效的实体名称",
+    'morph_requires_entities' => "属性 ':property' 是 morph_to 关系，需要显式指定实体",
+    'property_no_entity_condition_filtering' => "属性 ':property' 不支持实体条件筛选",
+    'entity_not_allowed_for_morph' => "实体 ':entity' 不允许用于多态属性 ':property'",
+    'has_not_filter_not_supported_on_object' => "运算符 'has_not' 带筛选条件不支持非关系属性 ':property'",
+    'count_options_not_supported_on_object' => "选项 'count_operator' 和 'count' 不支持非关系属性 ':property'",
+    'morph_condition_not_supported_in_object' => '多态条件不支持在非关系实体条件中使用',
+    'property_not_morph_to' => "属性 ':property' 不是 morph_to 关系",
+    'scope_not_supported_in_object' => '作用域不支持在非关系实体条件中使用',
+];

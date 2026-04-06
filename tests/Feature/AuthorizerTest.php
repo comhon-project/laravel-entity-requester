@@ -62,7 +62,7 @@ class AuthorizerTest extends TestCase
     public function test_authorize_not_scopable()
     {
         $this->expectException(NotScopableException::class);
-        $this->expectExceptionMessage("scope 'foobar' is not valid");
+        $this->expectExceptionMessage("Scope 'foobar' is not valid");
         app(EntityRequestAuthorizerInterface::class)->authorize(app(Importer::class)->import([
             'entity' => 'user',
             'filter' => [

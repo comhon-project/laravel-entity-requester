@@ -15,8 +15,6 @@ use Comhon\EntityRequester\DTOs\Scope;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
-use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
-use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Facades\EloquentBuilderFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope as EloquentScope;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -1014,7 +1012,7 @@ class EloquentBuilderFactoryTest extends TestCase
 
     public function test_build_entity_relationship_missing_arragration()
     {
-        $this->expectExceptionMessage('Invalid "to many" sort on property \'friends.id\', it must have aggregation function');
+        $this->expectExceptionMessage('Invalid "to many" sort on property \'friends.id\', it must have an aggregation function');
         $query = EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
@@ -1246,8 +1244,7 @@ class EloquentBuilderFactoryTest extends TestCase
 
     public function test_build_entity_request_entity_condition_object_has_not_with_filter()
     {
-        $this->expectException(InvalidEntityConditionException::class);
-        $this->expectExceptionMessage("Operator 'has_not' with filter is not supported on object property 'metadata'");
+        $this->expectExceptionMessage("Operator 'has_not' with filter is not supported on non-relationship property 'metadata'");
         EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
@@ -1266,8 +1263,7 @@ class EloquentBuilderFactoryTest extends TestCase
 
     public function test_build_entity_request_entity_condition_object_with_count()
     {
-        $this->expectException(InvalidEntityConditionException::class);
-        $this->expectExceptionMessage("Options 'count_operator' and 'count' are not supported on object property 'metadata'");
+        $this->expectExceptionMessage("Options 'count_operator' and 'count' are not supported on non-relationship property 'metadata'");
         EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'filter' => [
@@ -1282,8 +1278,7 @@ class EloquentBuilderFactoryTest extends TestCase
 
     public function test_build_entity_request_entity_condition_object_with_scope()
     {
-        $this->expectException(InvalidEntityConditionException::class);
-        $this->expectExceptionMessage('Scopes are not supported inside object entity conditions');
+        $this->expectExceptionMessage('Scopes are not supported inside non-relationship entity conditions');
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(
             new EntityCondition(
@@ -1395,7 +1390,7 @@ class EloquentBuilderFactoryTest extends TestCase
 
     public function test_build_entity_sort_mixed_relation_and_object_missing_aggregation()
     {
-        $this->expectException(InvalidToManySortException::class);
+        $this->expectExceptionMessage("Invalid \"to many\" sort on property 'posts.owner.metadata.address.city', it must have an aggregation function");
         EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [
@@ -1476,7 +1471,7 @@ class EloquentBuilderFactoryTest extends TestCase
 
     public function test_build_entity_sort_multiple_to_many_with_unsafe_aggregation_throws()
     {
-        $this->expectException(InvalidToManySortException::class);
+        $this->expectExceptionMessage("Invalid \"to many\" sort on property 'friends.email', only one sort with a non-deterministic aggregation (count, sum, avg) is allowed");
         EloquentBuilderFactory::fromInputs([
             'entity' => 'user',
             'sort' => [

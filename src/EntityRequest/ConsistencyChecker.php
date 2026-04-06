@@ -18,6 +18,7 @@ use Comhon\EntityRequester\Exceptions\InvalidOperatorForPropertyTypeException;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\MorphEntitiesRequiredException;
+use Comhon\EntityRequester\Exceptions\MultipleUnsafeAggregationSortException;
 use Comhon\EntityRequester\Exceptions\NonTraversablePropertyException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\PropertyNotFoundException;
@@ -121,19 +122,19 @@ class ConsistencyChecker
 
         if (! isset($property['entity'])) {
             throw new InvalidEntityConditionException(
-                "Property '$propertyId' does not support entity condition filtering"
+                'property_no_entity_condition_filtering', ['property' => $propertyId]
             );
         }
 
         if ($property['type'] === 'object') {
             if ($condition->getOperator() === EntityConditionOperator::HasNot && $condition->getFilter()) {
                 throw new InvalidEntityConditionException(
-                    "Operator 'has_not' with filter is not supported on object property '$propertyId'"
+                    'has_not_filter_not_supported_on_object', ['property' => $propertyId]
                 );
             }
             if ($condition->getCountOperator() !== null || $condition->getCount() !== null) {
                 throw new InvalidEntityConditionException(
-                    "Options 'count_operator' and 'count' are not supported on object property '$propertyId'"
+                    'count_options_not_supported_on_object', ['property' => $propertyId]
                 );
             }
         }
@@ -149,7 +150,7 @@ class ConsistencyChecker
     {
         if ($insideObject) {
             throw new InvalidEntityConditionException(
-                'MorphCondition is not supported inside object entity conditions'
+                'morph_condition_not_supported_in_object'
             );
         }
 
@@ -162,7 +163,7 @@ class ConsistencyChecker
 
         if (($property['relationship_type'] ?? null) !== 'morph_to') {
             throw new InvalidEntityConditionException(
-                "Property '$propertyId' is not a morph_to relationship"
+                'property_not_morph_to', ['property' => $propertyId]
             );
         }
 
@@ -183,7 +184,7 @@ class ConsistencyChecker
     {
         if ($insideObject) {
             throw new InvalidEntityConditionException(
-                'Scopes are not supported inside object entity conditions'
+                'scope_not_supported_in_object'
             );
         }
 
@@ -253,7 +254,7 @@ class ConsistencyChecker
             $isUnsafeAggregation = $this->validateSortElement($sortElement, $schema);
             if ($isUnsafeAggregation) {
                 if ($hasUnsafeAggregation) {
-                    throw new InvalidToManySortException($sortElement['property']);
+                    throw new MultipleUnsafeAggregationSortException($sortElement['property']);
                 }
                 $hasUnsafeAggregation = true;
             }

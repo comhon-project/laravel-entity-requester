@@ -23,6 +23,7 @@ use Comhon\EntityRequester\Exceptions\InvalidOperatorForPropertyTypeException;
 use Comhon\EntityRequester\Exceptions\InvalidScopeParametersException;
 use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
 use Comhon\EntityRequester\Exceptions\MorphEntitiesRequiredException;
+use Comhon\EntityRequester\Exceptions\MultipleUnsafeAggregationSortException;
 use Comhon\EntityRequester\Exceptions\NonTraversablePropertyException;
 use Comhon\EntityRequester\Exceptions\NotScopableException;
 use Comhon\EntityRequester\Exceptions\PropertyNotFoundException;
@@ -99,7 +100,7 @@ class ConsistencyCheckerTest extends TestCase
     public function test_scalar_operator_on_array_property_throws()
     {
         $this->expectException(InvalidOperatorForPropertyTypeException::class);
-        $this->expectExceptionMessage("Condition operator '=' is not valid for 'array' property type, must be one of [contains, not_contains]");
+        $this->expectExceptionMessage("Operator '=' is not valid for 'array' property type, must be one of [contains, not_contains]");
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Condition('favorite_fruits', ConditionOperator::Equal, 'apple'));
@@ -109,7 +110,7 @@ class ConsistencyCheckerTest extends TestCase
     public function test_contains_on_non_array_property_throws()
     {
         $this->expectException(InvalidOperatorForPropertyTypeException::class);
-        $this->expectExceptionMessage("Condition operator 'contains' is not valid for 'string' property type");
+        $this->expectExceptionMessage("Operator 'contains' is not valid for 'string' property type");
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Condition('name', ConditionOperator::Contains, 'john'));
@@ -119,7 +120,7 @@ class ConsistencyCheckerTest extends TestCase
     public function test_object_type_invalid_operator()
     {
         $this->expectException(InvalidOperatorForPropertyTypeException::class);
-        $this->expectExceptionMessage("Condition operator '=' is not valid for 'object' property type, must be one of [has_key, has_not_key]");
+        $this->expectExceptionMessage("Operator '=' is not valid for 'object' property type, must be one of [has_key, has_not_key]");
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new Condition('metadata', ConditionOperator::Equal, 'test'));
@@ -208,7 +209,7 @@ class ConsistencyCheckerTest extends TestCase
     public function test_scope_inside_object_throws()
     {
         $this->expectException(InvalidEntityConditionException::class);
-        $this->expectExceptionMessage('Scopes are not supported inside object entity conditions');
+        $this->expectExceptionMessage('Scopes are not supported inside non-relationship entity conditions');
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new EntityCondition(
@@ -222,7 +223,7 @@ class ConsistencyCheckerTest extends TestCase
     public function test_morph_inside_object_throws()
     {
         $this->expectException(InvalidEntityConditionException::class);
-        $this->expectExceptionMessage('MorphCondition is not supported inside object entity conditions');
+        $this->expectExceptionMessage('MorphCondition is not supported inside non-relationship entity conditions');
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new EntityCondition(
@@ -246,7 +247,7 @@ class ConsistencyCheckerTest extends TestCase
     public function test_entity_condition_has_not_with_filter_on_object_throws()
     {
         $this->expectException(InvalidEntityConditionException::class);
-        $this->expectExceptionMessage("Operator 'has_not' with filter is not supported on object property 'metadata'");
+        $this->expectExceptionMessage("Operator 'has_not' with filter is not supported on non-relationship property 'metadata'");
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new EntityCondition(
@@ -260,7 +261,7 @@ class ConsistencyCheckerTest extends TestCase
     public function test_entity_condition_count_on_object_throws()
     {
         $this->expectException(InvalidEntityConditionException::class);
-        $this->expectExceptionMessage("Options 'count_operator' and 'count' are not supported on object property 'metadata'");
+        $this->expectExceptionMessage("Options 'count_operator' and 'count' are not supported on non-relationship property 'metadata'");
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->setFilter(new EntityCondition(
@@ -415,7 +416,7 @@ class ConsistencyCheckerTest extends TestCase
 
     public function test_multiple_to_many_unsafe_aggregation_throws()
     {
-        $this->expectException(InvalidToManySortException::class);
+        $this->expectException(MultipleUnsafeAggregationSortException::class);
 
         $entityRequest = new EntityRequest(User::class);
         $entityRequest->addSort('posts.name', OrderDirection::Asc, null, AggregationFunction::Count);

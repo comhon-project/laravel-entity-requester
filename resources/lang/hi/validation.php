@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'property_not_found_in_schema' => "प्रॉपर्टी ':property' स्कीमा ':schema' में नहीं मिली",
+    'property_not_filtrable' => "प्रॉपर्टी ':property' फ़िल्टर योग्य नहीं है",
+    'property_not_sortable' => "प्रॉपर्टी ':property' सॉर्ट योग्य नहीं है",
+    'property_not_traversable' => "प्रॉपर्टी ':property' ट्रैवर्स योग्य नहीं है",
+    'property_required' => "प्रॉपर्टी ':property' आवश्यक है",
+    'property_invalid_type' => "प्रॉपर्टी ':property' का प्रकार :type होना चाहिए",
+    'property_invalid_enum' => "प्रॉपर्टी ':property' इनमें से एक होनी चाहिए: [:values]",
+    'property_invalid_operator' => "प्रॉपर्टी ':property' को इनमें से एक ऑपरेटर का उपयोग करना चाहिए: [:values]",
+    'operator_not_valid_for_type' => "ऑपरेटर ':operator' प्रॉपर्टी प्रकार ':type' के लिए मान्य नहीं है, इनमें से एक होना चाहिए: [:values]",
+    'to_many_sort_requires_aggregation' => "\"to many\" प्रॉपर्टी ':property' पर सॉर्ट के लिए एग्रीगेशन फ़ंक्शन आवश्यक है",
+    'multiple_unsafe_aggregation_sort' => "\"to many\" प्रॉपर्टी ':property' पर सॉर्ट की अनुमति नहीं है: केवल एक गैर-नियतात्मक एग्रीगेशन (count, sum, avg) वाला सॉर्ट अनुमत है",
+    'schema_not_found' => ":name ':id' नहीं मिला",
+    'scope_not_valid' => "स्कोप ':scope' मान्य नहीं है",
+    'scope_invalid_parameters' => "स्कोप ':scope' के पैरामीटर अमान्य हैं",
+    'entity_not_valid' => "एंटिटी ':entity' एक मान्य एंटिटी नाम नहीं है",
+    'morph_requires_entities' => "प्रॉपर्टी ':property' एक morph_to रिलेशन है और स्पष्ट एंटिटी आवश्यक हैं",
+    'property_no_entity_condition_filtering' => "प्रॉपर्टी ':property' एंटिटी कंडीशन फ़िल्टरिंग का समर्थन नहीं करती",
+    'entity_not_allowed_for_morph' => "एंटिटी ':entity' मॉर्फ प्रॉपर्टी ':property' के लिए अनुमत नहीं है",
+    'has_not_filter_not_supported_on_object' => "ऑपरेटर 'has_not' फ़िल्टर के साथ गैर-रिलेशनशिप प्रॉपर्टी ':property' पर समर्थित नहीं है",
+    'count_options_not_supported_on_object' => "विकल्प 'count_operator' और 'count' गैर-रिलेशनशिप प्रॉपर्टी ':property' पर समर्थित नहीं हैं",
+    'morph_condition_not_supported_in_object' => 'MorphCondition गैर-रिलेशनशिप एंटिटी कंडीशन में समर्थित नहीं है',
+    'property_not_morph_to' => "प्रॉपर्टी ':property' एक morph_to रिलेशन नहीं है",
+    'scope_not_supported_in_object' => 'स्कोप गैर-रिलेशनशिप एंटिटी कंडीशन में समर्थित नहीं हैं',
+];

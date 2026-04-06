@@ -99,7 +99,7 @@ class Authorizer implements EntityRequestAuthorizerInterface
 
         if (! isset($property['entity'])) {
             throw new InvalidEntityConditionException(
-                "Property '$propertyId' does not support entity condition filtering"
+                'property_no_entity_condition_filtering', ['property' => $propertyId]
             );
         }
 
@@ -117,7 +117,7 @@ class Authorizer implements EntityRequestAuthorizerInterface
         foreach ($condition->getEntities() as $entityName) {
             if (! in_array($entityName, $allowedEntities)) {
                 throw new InvalidEntityConditionException(
-                    "Entity '$entityName' is not allowed for morph property '$propertyId'"
+                    'entity_not_allowed_for_morph', ['entity' => $entityName, 'property' => $propertyId]
                 );
             }
             if ($filter) {

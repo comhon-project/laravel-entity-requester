@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'property_not_found_in_schema' => "プロパティ ':property' はスキーマ ':schema' に見つかりません",
+    'property_not_filtrable' => "プロパティ ':property' はフィルタできません",
+    'property_not_sortable' => "プロパティ ':property' はソートできません",
+    'property_not_traversable' => "プロパティ ':property' はトラバースできません",
+    'property_required' => "プロパティ ':property' は必須です",
+    'property_invalid_type' => "プロパティ ':property' は :type 型である必要があります",
+    'property_invalid_enum' => "プロパティ ':property' は [:values] のいずれかである必要があります",
+    'property_invalid_operator' => "プロパティ ':property' は [:values] のいずれかの演算子を使用する必要があります",
+    'operator_not_valid_for_type' => "演算子 ':operator' はプロパティ型 ':type' に対して無効です。[:values] のいずれかである必要があります",
+    'to_many_sort_requires_aggregation' => "\"to many\" プロパティ ':property' のソートには集約関数が必要です",
+    'multiple_unsafe_aggregation_sort' => "\"to many\" プロパティ ':property' のソートは許可されていません：非決定的な集約（count、sum、avg）を使用するソートは1つのみ許可されています",
+    'schema_not_found' => ":name ':id' が見つかりません",
+    'scope_not_valid' => "スコープ ':scope' は無効です",
+    'scope_invalid_parameters' => "スコープ ':scope' のパラメータが無効です",
+    'entity_not_valid' => "エンティティ ':entity' は有効なエンティティ名ではありません",
+    'morph_requires_entities' => "プロパティ ':property' は morph_to リレーションであり、明示的なエンティティが必要です",
+    'property_no_entity_condition_filtering' => "プロパティ ':property' はエンティティ条件フィルタリングをサポートしていません",
+    'entity_not_allowed_for_morph' => "エンティティ ':entity' はモーフプロパティ ':property' に許可されていません",
+    'has_not_filter_not_supported_on_object' => "演算子 'has_not' とフィルタの組み合わせは非リレーションプロパティ ':property' ではサポートされていません",
+    'count_options_not_supported_on_object' => "オプション 'count_operator' と 'count' は非リレーションプロパティ ':property' ではサポートされていません",
+    'morph_condition_not_supported_in_object' => 'MorphCondition は非リレーションエンティティ条件内ではサポートされていません',
+    'property_not_morph_to' => "プロパティ ':property' は morph_to リレーションではありません",
+    'scope_not_supported_in_object' => 'スコープは非リレーションエンティティ条件内ではサポートされていません',
+];

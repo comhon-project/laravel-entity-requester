@@ -2,10 +2,10 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class MorphEntitiesRequiredException extends RenderableException
+class MorphEntitiesRequiredException extends InvalidEntityRequestException
 {
     public function __construct(string $propertyId)
     {
-        parent::__construct("Property '$propertyId' is a morph_to relation and requires explicit entities");
+        parent::__construct('morph_requires_entities', ['property' => $propertyId]);
     }
 }

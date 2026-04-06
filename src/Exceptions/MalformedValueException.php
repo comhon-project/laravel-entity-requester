@@ -2,10 +2,10 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class MalformedValueException extends RenderableException
+class MalformedValueException extends InvalidEntityRequestException
 {
     public function __construct(string $propertyName, string $expectedType)
     {
-        parent::__construct("Invalid property '$propertyName', must be a $expectedType");
+        parent::__construct('property_invalid_type', ['property' => $propertyName, 'type' => $expectedType]);
     }
 }

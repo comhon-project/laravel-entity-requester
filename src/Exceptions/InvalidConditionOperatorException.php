@@ -2,12 +2,12 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class InvalidConditionOperatorException extends RenderableException
+class InvalidConditionOperatorException extends InvalidEntityRequestException
 {
     public function __construct(string $propertyName, array $supportedOperators)
     {
-        $values = array_map(fn ($op) => $op->value, $supportedOperators);
+        $values = implode(', ', array_map(fn ($op) => $op->value, $supportedOperators));
 
-        parent::__construct("Invalid property '$propertyName', must be one of [".implode(', ', $values).']');
+        parent::__construct('property_invalid_operator', ['property' => $propertyName, 'values' => $values]);
     }
 }

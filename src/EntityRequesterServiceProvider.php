@@ -26,6 +26,7 @@ class EntityRequesterServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-entity-requester')
             ->hasConfigFile()
+            ->hasTranslations()
             ->hasCommand(MakeModelSchema::class);
     }
 

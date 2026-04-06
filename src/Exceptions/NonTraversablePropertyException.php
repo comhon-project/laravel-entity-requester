@@ -2,10 +2,10 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class NonTraversablePropertyException extends RenderableException
+class NonTraversablePropertyException extends InvalidEntityRequestException
 {
     public function __construct(string $propertyId)
     {
-        parent::__construct("Property '$propertyId' is not traversable");
+        parent::__construct('property_not_traversable', ['property' => $propertyId]);
     }
 }

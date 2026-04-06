@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'property_not_found_in_schema' => "প্রপার্টি ':property' স্কিমা ':schema'-তে পাওয়া যায়নি",
+    'property_not_filtrable' => "প্রপার্টি ':property' ফিল্টারযোগ্য নয়",
+    'property_not_sortable' => "প্রপার্টি ':property' সর্টযোগ্য নয়",
+    'property_not_traversable' => "প্রপার্টি ':property' ট্র্যাভার্সযোগ্য নয়",
+    'property_required' => "প্রপার্টি ':property' আবশ্যক",
+    'property_invalid_type' => "প্রপার্টি ':property' অবশ্যই :type টাইপের হতে হবে",
+    'property_invalid_enum' => "প্রপার্টি ':property' অবশ্যই [:values]-এর একটি হতে হবে",
+    'property_invalid_operator' => "প্রপার্টি ':property'-কে [:values] অপারেটরগুলির একটি ব্যবহার করতে হবে",
+    'operator_not_valid_for_type' => "অপারেটর ':operator' প্রপার্টি টাইপ ':type'-এর জন্য বৈধ নয়, অবশ্যই [:values]-এর একটি হতে হবে",
+    'to_many_sort_requires_aggregation' => "\"to many\" প্রপার্টি ':property'-এ সর্টিংয়ে একটি অ্যাগ্রিগেশন ফাংশন থাকতে হবে",
+    'multiple_unsafe_aggregation_sort' => "\"to many\" প্রপার্টি ':property'-এ সর্টিং অনুমোদিত নয়: শুধুমাত্র একটি অনির্ণায়ক অ্যাগ্রিগেশন (count, sum, avg) সহ সর্ট অনুমোদিত",
+    'schema_not_found' => ":name ':id' পাওয়া যায়নি",
+    'scope_not_valid' => "স্কোপ ':scope' বৈধ নয়",
+    'scope_invalid_parameters' => "স্কোপ ':scope'-এর প্যারামিটার অবৈধ",
+    'entity_not_valid' => "এন্টিটি ':entity' একটি বৈধ এন্টিটি নাম নয়",
+    'morph_requires_entities' => "প্রপার্টি ':property' একটি morph_to রিলেশন এবং স্পষ্ট এন্টিটি প্রয়োজন",
+    'property_no_entity_condition_filtering' => "প্রপার্টি ':property' এন্টিটি কন্ডিশন ফিল্টারিং সমর্থন করে না",
+    'entity_not_allowed_for_morph' => "এন্টিটি ':entity' মর্ফ প্রপার্টি ':property'-এর জন্য অনুমোদিত নয়",
+    'has_not_filter_not_supported_on_object' => "অপারেটর 'has_not' ফিল্টার সহ নন-রিলেশনশিপ প্রপার্টি ':property'-এ সমর্থিত নয়",
+    'count_options_not_supported_on_object' => "অপশন 'count_operator' এবং 'count' নন-রিলেশনশিপ প্রপার্টি ':property'-এ সমর্থিত নয়",
+    'morph_condition_not_supported_in_object' => 'MorphCondition নন-রিলেশনশিপ এন্টিটি কন্ডিশনের মধ্যে সমর্থিত নয়',
+    'property_not_morph_to' => "প্রপার্টি ':property' একটি morph_to রিলেশন নয়",
+    'scope_not_supported_in_object' => 'স্কোপ নন-রিলেশনশিপ এন্টিটি কন্ডিশনের মধ্যে সমর্থিত নয়',
+];

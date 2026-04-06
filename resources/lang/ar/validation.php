@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'property_not_found_in_schema' => "الخاصية ':property' غير موجودة في المخطط ':schema'",
+    'property_not_filtrable' => "الخاصية ':property' غير قابلة للتصفية",
+    'property_not_sortable' => "الخاصية ':property' غير قابلة للترتيب",
+    'property_not_traversable' => "الخاصية ':property' غير قابلة للاجتياز",
+    'property_required' => "الخاصية ':property' مطلوبة",
+    'property_invalid_type' => "الخاصية ':property' يجب أن تكون من نوع :type",
+    'property_invalid_enum' => "الخاصية ':property' يجب أن تكون إحدى [:values]",
+    'property_invalid_operator' => "الخاصية ':property' يجب أن تستخدم أحد المعاملات [:values]",
+    'operator_not_valid_for_type' => "المعامل ':operator' غير صالح لنوع الخاصية ':type'، يجب أن يكون أحد [:values]",
+    'to_many_sort_requires_aggregation' => "الترتيب على خاصية \"to many\" ':property' يجب أن يحتوي على دالة تجميع",
+    'multiple_unsafe_aggregation_sort' => "الترتيب على خاصية \"to many\" ':property' غير مسموح: يُسمح بترتيب واحد فقط مع تجميع غير حتمي (count، sum، avg)",
+    'schema_not_found' => ":name ':id' غير موجود",
+    'scope_not_valid' => "النطاق ':scope' غير صالح",
+    'scope_invalid_parameters' => "معاملات النطاق ':scope' غير صالحة",
+    'entity_not_valid' => "الكيان ':entity' ليس اسم كيان صالح",
+    'morph_requires_entities' => "الخاصية ':property' هي علاقة morph_to وتتطلب كيانات صريحة",
+    'property_no_entity_condition_filtering' => "الخاصية ':property' لا تدعم التصفية بشرط الكيان",
+    'entity_not_allowed_for_morph' => "الكيان ':entity' غير مسموح للخاصية المتعددة الأشكال ':property'",
+    'has_not_filter_not_supported_on_object' => "المعامل 'has_not' مع التصفية غير مدعوم على الخاصية غير العلائقية ':property'",
+    'count_options_not_supported_on_object' => "الخياران 'count_operator' و'count' غير مدعومين على الخاصية غير العلائقية ':property'",
+    'morph_condition_not_supported_in_object' => 'شروط MorphCondition غير مدعومة داخل شروط الكيان غير العلائقية',
+    'property_not_morph_to' => "الخاصية ':property' ليست علاقة morph_to",
+    'scope_not_supported_in_object' => 'النطاقات غير مدعومة داخل شروط الكيان غير العلائقية',
+];

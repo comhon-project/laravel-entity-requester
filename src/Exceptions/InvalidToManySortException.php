@@ -2,12 +2,10 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class InvalidToManySortException extends RenderableException
+class InvalidToManySortException extends InvalidEntityRequestException
 {
     public function __construct(string $propertyName)
     {
-        parent::__construct(
-            "Invalid \"to many\" sort on property '$propertyName', it must have aggregation function"
-        );
+        parent::__construct('to_many_sort_requires_aggregation', ['property' => $propertyName]);
     }
 }

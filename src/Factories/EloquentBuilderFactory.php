@@ -17,9 +17,6 @@ use Comhon\EntityRequester\Enums\AggregationFunction;
 use Comhon\EntityRequester\Enums\ConditionOperator;
 use Comhon\EntityRequester\Enums\EntityConditionOperator;
 use Comhon\EntityRequester\Enums\GroupOperator;
-use Comhon\EntityRequester\Exceptions\InvalidEntityConditionException;
-use Comhon\EntityRequester\Exceptions\InvalidToManySortException;
-use Comhon\EntityRequester\Exceptions\UnknownMorphEntityException;
 use Comhon\ModelResolverContract\ModelResolverInterface;
 use DateTime;
 use Illuminate\Database\Eloquent\Builder;
@@ -87,9 +84,7 @@ class EloquentBuilderFactory
             EntityCondition::class => $this->addEntityCondition($query, $filter, $and, $table, $jsonPathPrefix),
             MorphCondition::class => $this->addMorphEntityCondition($query, $filter, $and),
             Scope::class => $jsonPathPrefix !== null
-                ? throw new InvalidEntityConditionException(
-                    'Scopes are not supported inside object entity conditions'
-                )
+                ? throw new \Exception('Scopes are not supported inside non-relationship entity conditions')
                 : $this->addScope($query, $filter, $and),
         };
 
@@ -171,7 +166,7 @@ class EloquentBuilderFactory
         if ($isRelation) {
             $this->addRelationshipEntityCondition($query, $condition, $and, $table);
         } else {
-            $this->addObjectEntityCondition($query, $condition, $and, $table, $jsonPathPrefix);
+            $this->addJsonCondition($query, $condition, $and, $table, $jsonPathPrefix);
         }
     }
 
@@ -206,7 +201,7 @@ class EloquentBuilderFactory
             : $query->$callWhere($propertyId, $callback);
     }
 
-    private function addObjectEntityCondition(
+    private function addJsonCondition(
         Builder $query,
         EntityCondition $condition,
         bool $and,
@@ -218,14 +213,10 @@ class EloquentBuilderFactory
         $isHas = $condition->getOperator() === EntityConditionOperator::Has;
 
         if (! $isHas && $filter) {
-            throw new InvalidEntityConditionException(
-                "Operator 'has_not' with filter is not supported on object property '$propertyId'"
-            );
+            throw new \Exception("Operator 'has_not' with filter is not supported on non-relationship property '$propertyId'");
         }
         if ($condition->getCountOperator() !== null || $condition->getCount() !== null) {
-            throw new InvalidEntityConditionException(
-                "Options 'count_operator' and 'count' are not supported on object property '$propertyId'"
-            );
+            throw new \Exception("Options 'count_operator' and 'count' are not supported on non-relationship property '$propertyId'");
         }
 
         if (empty($table)) {
@@ -262,7 +253,8 @@ class EloquentBuilderFactory
         $count = $condition->getCount() ?? 1;
 
         $entityClasses = array_map(
-            fn ($name) => $this->modelResolver->getClass($name) ?? throw new UnknownMorphEntityException($name),
+            fn ($name) => $this->modelResolver->getClass($name)
+                ?? throw new \Exception("Entity '$name' is not a valid entity name"),
             $condition->getEntities()
         );
 
@@ -342,7 +334,7 @@ class EloquentBuilderFactory
                         $isUnsafeAggregation = $this->addRelationshipSort($query, $sortElement);
                         if ($isUnsafeAggregation) {
                             if ($hasUnsafeAggregation) {
-                                throw new InvalidToManySortException($property);
+                                throw new \Exception("Invalid \"to many\" sort on property '$property', only one sort with a non-deterministic aggregation (count, sum, avg) is allowed");
                             }
                             $hasUnsafeAggregation = true;
                         }
@@ -421,7 +413,7 @@ class EloquentBuilderFactory
         }
 
         if (! isset($relationshipSort['aggregation'])) {
-            throw new InvalidToManySortException($relationshipSort['property']);
+            throw new \Exception("Invalid \"to many\" sort on property '{$relationshipSort['property']}', it must have an aggregation function");
         }
 
         $aggregation = $relationshipSort['aggregation'];

@@ -2,10 +2,10 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class NotSortableException extends RenderableException
+class NotSortableException extends InvalidEntityRequestException
 {
     public function __construct(string $propertyName)
     {
-        parent::__construct("Property '$propertyName' is not sortable");
+        parent::__construct('property_not_sortable', ['property' => $propertyName]);
     }
 }

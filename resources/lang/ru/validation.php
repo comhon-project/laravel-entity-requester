@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'property_not_found_in_schema' => "Свойство ':property' не найдено в схеме ':schema'",
+    'property_not_filtrable' => "Свойство ':property' не является фильтруемым",
+    'property_not_sortable' => "Свойство ':property' не является сортируемым",
+    'property_not_traversable' => "Свойство ':property' не является обходимым",
+    'property_required' => "Свойство ':property' обязательно",
+    'property_invalid_type' => "Свойство ':property' должно быть типа :type",
+    'property_invalid_enum' => "Свойство ':property' должно быть одним из [:values]",
+    'property_invalid_operator' => "Свойство ':property' должно использовать один из операторов [:values]",
+    'operator_not_valid_for_type' => "Оператор ':operator' недопустим для типа свойства ':type', должен быть одним из [:values]",
+    'to_many_sort_requires_aggregation' => "Сортировка по свойству \"to many\" ':property' должна использовать функцию агрегации",
+    'multiple_unsafe_aggregation_sort' => "Сортировка по свойству \"to many\" ':property' не разрешена: допускается только одна сортировка с недетерминированной агрегацией (count, sum, avg)",
+    'schema_not_found' => ":name ':id' не найден",
+    'scope_not_valid' => "Область ':scope' недопустима",
+    'scope_invalid_parameters' => "Параметры области ':scope' недопустимы",
+    'entity_not_valid' => "Сущность ':entity' не является допустимым именем сущности",
+    'morph_requires_entities' => "Свойство ':property' является отношением morph_to и требует явного указания сущностей",
+    'property_no_entity_condition_filtering' => "Свойство ':property' не поддерживает фильтрацию по условию сущности",
+    'entity_not_allowed_for_morph' => "Сущность ':entity' не разрешена для морфного свойства ':property'",
+    'has_not_filter_not_supported_on_object' => "Оператор 'has_not' с фильтром не поддерживается для нереляционного свойства ':property'",
+    'count_options_not_supported_on_object' => "Параметры 'count_operator' и 'count' не поддерживаются для нереляционного свойства ':property'",
+    'morph_condition_not_supported_in_object' => 'MorphCondition не поддерживается внутри нереляционных условий сущности',
+    'property_not_morph_to' => "Свойство ':property' не является отношением morph_to",
+    'scope_not_supported_in_object' => 'Области не поддерживаются внутри нереляционных условий сущности',
+];

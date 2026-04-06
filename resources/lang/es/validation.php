@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'property_not_found_in_schema' => "La propiedad ':property' no se encontró en el esquema ':schema'",
+    'property_not_filtrable' => "La propiedad ':property' no es filtrable",
+    'property_not_sortable' => "La propiedad ':property' no es ordenable",
+    'property_not_traversable' => "La propiedad ':property' no es traversable",
+    'property_required' => "La propiedad ':property' es obligatoria",
+    'property_invalid_type' => "La propiedad ':property' debe ser de tipo :type",
+    'property_invalid_enum' => "La propiedad ':property' debe ser uno de [:values]",
+    'property_invalid_operator' => "La propiedad ':property' debe usar uno de los operadores [:values]",
+    'operator_not_valid_for_type' => "El operador ':operator' no es válido para el tipo de propiedad ':type', debe ser uno de [:values]",
+    'to_many_sort_requires_aggregation' => "La ordenación en la propiedad \"to many\" ':property' debe tener una función de agregación",
+    'multiple_unsafe_aggregation_sort' => "No se permite la ordenación en la propiedad \"to many\" ':property': solo se permite una ordenación con una agregación no determinista (count, sum, avg)",
+    'schema_not_found' => ":name ':id' no encontrado",
+    'scope_not_valid' => "El scope ':scope' no es válido",
+    'scope_invalid_parameters' => "Los parámetros del scope ':scope' son inválidos",
+    'entity_not_valid' => "La entidad ':entity' no es un nombre de entidad válido",
+    'morph_requires_entities' => "La propiedad ':property' es una relación morph_to y requiere entidades explícitas",
+    'property_no_entity_condition_filtering' => "La propiedad ':property' no admite filtrado por condición de entidad",
+    'entity_not_allowed_for_morph' => "La entidad ':entity' no está permitida para la propiedad morph ':property'",
+    'has_not_filter_not_supported_on_object' => "El operador 'has_not' con filtro no es compatible con la propiedad no relacional ':property'",
+    'count_options_not_supported_on_object' => "Las opciones 'count_operator' y 'count' no son compatibles con la propiedad no relacional ':property'",
+    'morph_condition_not_supported_in_object' => 'Las MorphCondition no son compatibles dentro de condiciones de entidad no relacionales',
+    'property_not_morph_to' => "La propiedad ':property' no es una relación morph_to",
+    'scope_not_supported_in_object' => 'Los scopes no son compatibles dentro de condiciones de entidad no relacionales',
+];

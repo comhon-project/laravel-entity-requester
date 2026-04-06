@@ -2,10 +2,10 @@
 
 namespace Comhon\EntityRequester\Exceptions;
 
-class InvalidEntityConditionException extends RenderableException
+class InvalidEntityConditionException extends InvalidEntityRequestException
 {
-    public function __construct(string $message)
+    public function __construct(string $message, array $params = [])
     {
-        parent::__construct($message);
+        parent::__construct($message, $params);
     }
 }
