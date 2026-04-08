@@ -48,6 +48,10 @@ $results = EloquentBuilderFactory::fromEntityRequest($entityRequest)->get();
 $results = EloquentBuilderFactory::fromInputs($request->all())->get();
 ```
 
+## Documentation
+
+[Full documentation](https://comhon-project.github.io/laravel-entity-requester/)
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
