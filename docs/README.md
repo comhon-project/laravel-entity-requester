@@ -31,7 +31,7 @@ A Laravel package that converts complex REST API filter/sort requests into Eloqu
 
 - [Conditions](entity-request/filtering/conditions.md) -- Filter on a single property
 - [Groups](entity-request/filtering/groups.md) -- Combine filters with AND/OR logic
-- [Entity Conditions](entity-request/filtering/entity-conditions.md) -- Filter on relationship existence (has/has_not)
+- [Entity Conditions](entity-request/filtering/entity-conditions.md) -- Filter on relationships and JSON columns (has/has_not)
 - [Morph Conditions](entity-request/filtering/morph-conditions.md) -- Filter on polymorphic relationships
 - [Scopes](entity-request/filtering/scopes.md) -- Use model scopes as filters
 - [Operators Reference](entity-request/filtering/operators.md) -- Complete operator reference table

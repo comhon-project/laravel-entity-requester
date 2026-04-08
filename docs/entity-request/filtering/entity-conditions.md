@@ -1,6 +1,6 @@
 # Entity Conditions
 
-Entity conditions filter based on relationship existence. They translate to `whereHas` / `whereDoesntHave` Eloquent methods.
+Entity conditions filter based on relationship existence and JSON column traversal. For relationships, they translate to `whereHas` / `whereDoesntHave` Eloquent methods.
 
 ## Structure
 
@@ -53,7 +53,7 @@ SQL equivalent: users that have at least 5 posts.
 
 ## With Nested Filter
 
-Apply conditions on the related entity:
+Apply a filter on the related entity. The `filter` field accepts any filter type (condition, group, entity condition, morph condition, scope):
 
 ```json
 {

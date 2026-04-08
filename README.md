@@ -50,7 +50,7 @@ $results = EloquentBuilderFactory::fromInputs($request->all())->get();
 
 ## Documentation
 
-[Full documentation](https://comhon-project.github.io/laravel-entity-requester/)
+To learn more about Laravel Entity Requester, please see the [documentation](https://comhon-project.github.io/laravel-entity-requester/).
 
 ## Changelog
 
