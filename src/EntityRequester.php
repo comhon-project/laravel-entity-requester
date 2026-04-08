@@ -4,6 +4,7 @@ namespace Comhon\EntityRequester;
 
 use Comhon\EntityRequester\Interfaces\CacheableInterface;
 use Comhon\EntityRequester\Interfaces\EntitySchemaFactoryInterface;
+use Comhon\EntityRequester\Interfaces\EnumSchemaFactoryInterface;
 use Comhon\EntityRequester\Interfaces\RequestSchemaFactoryInterface;
 
 class EntityRequester
@@ -35,6 +36,7 @@ class EntityRequester
     {
         $this->refreshEntityCache();
         $this->refreshRequestCache();
+        $this->refreshEnumCache();
     }
 
     /**
@@ -59,5 +61,17 @@ class EntityRequester
         $factory instanceof CacheableInterface
             ? $factory->refresh($schemaId)
             : throw new \Exception('Request schema factory must be instance of CacheableInterface to refresh cache');
+    }
+
+    /**
+     * @param  ?string  $schemaId  if string given, refresh only given enum schema.
+     *                             otherwise, flush all enum schemas (usable only for TaggableStore).
+     */
+    public function refreshEnumCache(?string $schemaId = null): void
+    {
+        $factory = app(EnumSchemaFactoryInterface::class);
+        $factory instanceof CacheableInterface
+            ? $factory->refresh($schemaId)
+            : throw new \Exception('Enum schema factory must be instance of CacheableInterface to refresh cache');
     }
 }

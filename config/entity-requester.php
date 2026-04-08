@@ -4,7 +4,7 @@ return [
     /*
     | determine if schemas should be cached
     */
-    'use_cache' => false,
+    'use_cache' => env('ENTITY_REQUESTER_CACHE', false),
 
     /*
     | determine in which directory entities schemas are stored
